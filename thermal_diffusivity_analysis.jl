@@ -1,93 +1,119 @@
-using Plots
+using CSV
 using DataFrames
 using Unitful
-using CSV
-using Gtk4, GtkObservables
+using Plots
 
-function analyze_data(df)
-
-end
-
-function extract_header_data(df)
-    header_data = Dict{String, Any}()
-    for i in 2:14
-        header_data[df[i, 2]] = df[i ,3]
-    end
-    return header_data
-end
-
-function extract_temperature_data(df)
-
-    
-
-    #  temperature_data =Matrix{Float64}[]
-    #  frame_num = 1
-    #  while true
-    #      frame_start = 15 + (frame_num - 1) * 21
-    #      if frame_start > size(df, 1)
-    #          break
-    #      end
-    #      temp_data = Matrix{Float64}(undef, 20, 17)
-    #      for i in 1:20
-    #          for j in 1:17
-    #              temp_data[i, j] = parse(Float64, df[frame_start + i, 'B' + j - 1])
-    #          end
-    #      end
-    #      push!(temperature_data, temp_data)
-    #      frame_num += 1
-    #  end
-    #  return temperature_data
-end
-
-function read_file(filename) 
-    #header_df = DataFrame(CSV.File(filename, skipto=1, limit=13))
-    #println("Header:\n", header_df)
-    df = CSV.read(filename, DataFrame, skipto=15) # DataFrame(CSV.File(filename, skipto=15))
-    println("Rest of it:\n", df[1:20, 1:end])
-    # header_data = extract_header_data(df)
-    temperature_data = extract_temperature_data(df)
-
-    # println("Header Data:")
-    # for (k, v) in header_data
-    #    println("$k, $v")
-    # end
-
-    #  println("\nTemperature Data (Vector of Matrrices):")
-    #  for (i, matrix) in enumerate(temperature_data)
-    #      println("Frame $i: ")
-    #      println(matrix)
-    #  end
-end
-
-function on_button_clicked(window)
-    println("Window: $window")
-    file_path = open_file_dialog(window)
-    if file_path !== nothing
-        df = DataFrame(CSV.File(file_path))
-
-        println(df)
-    end
-end
-
-function create_window()
-    win = GtkWindow("Thermal Diffusivity Analysis")
-    hbox = GtkBox(:h)
-    push!(win, hbox)
-    vbox = GtkBox(:v)
-    push!(win, vbox)
-
-    file_search = GtkButton("Select a file to analyze")
-    file_search.hexpand = true
-
-    id = signal_connect(file_search, "clicked") do widget
-        open_dialog("Pick a sample file to analyze", win, start_folder = ".") do filename
-            read_file(filename)
+function parse_thermal_video(file_path)
+    # Read the entire file
+    data = readlines(file_path)
+   
+    # Extract auxiliary data
+    aux_data = Dict{String, Any}()
+    for i in 1:14
+        parts = split(data[i], ',', limit=3)
+        if length(parts) == 3
+            key = strip(parts[2], ':')
+            value = strip(parts[3])
+            if occursin("°C", value)
+                value = parse(Float64, split(value)[1]) * u"°C"
+            elseif occursin("%", value)
+                value = parse(Float64, split(value)[1]) * u"percent"
+            elseif occursin("m", value)
+                value = parse(Float64, split(value)[1]) * u"m"
+            else
+                value = try
+                    parse(Float64, value)
+                catch
+                    value
+                end
+            end
+            aux_data[key] = value
         end
     end
 
-    push!(vbox, file_search)
-    show(win)
+    # Extract frame data
+    frame_data = Vector{Matrix{Float64}}()
+    current_frame = Vector{Vector{Float64}}()
+    
+    for line in data[15:end]
+        if startswith(line, "Frame")
+            if !isempty(current_frame)
+                push!(frame_data, reduce(vcat, transpose.(current_frame)))
+                current_frame = Vector{Vector{Float64}}()
+            else
+                push!(current_frame, parse.(Float64, split(line, ',')[2:end]))
+            end
+        elseif !isempty(strip(line))
+            split_line = split(line, ',')
+            if split_line[end] == ""
+                parsed_line = parse.(Float64, split_line[2:end - 1])
+                push!(current_frame, parsed_line)
+            else
+                parsed_line = parse.(Float64, split_line[2:end])
+                push!(current_frame, parsed_line)
+            end
+        end
+    end
+    
+    # Add the last frame if it exists
+    if !isempty(current_frame)
+        push!(frame_data, reduce(vcat, transpose.(current_frame)))
+    end
+
+    return aux_data, frame_data
 end
 
-# create_window()
-read_file("./Sample2_Extracted Data/Sample2 100 M1.csv")
+function find_hotspot_center(matrix)
+    max_value = maximum(matrix)
+    rows, cols = size(matrix)
+    
+    max_positions = Tuple{Int, Int}[]
+    
+    for i in 1:rows
+        for j in 1:cols
+            if matrix[i, j] == max_value
+                push!(max_positions, (i, j))
+            end
+        end
+    end
+    
+    if isempty(max_positions)
+        error("No maximum found. This should not happen with a non-empty matrix.")
+    end
+    
+    total_x = sum(pos[2] for pos in max_positions)
+    total_y = sum(pos[1] for pos in max_positions)
+    count = length(max_positions)
+    
+    avg_x = total_x / count
+    avg_y = total_y / count
+    
+    return (avg_x, avg_y)
+end
+
+# Usage
+file_path = "./Sample2_Extracted Data/Sample2 RT M1.csv"
+aux_data, frame_data = parse_thermal_video(file_path)
+
+for (idx,_) in enumerate(frame_data)
+    frame_data[idx] .+= 273.15
+end
+
+# Print auxiliary data
+for (key, value) in aux_data
+    println("$key: $value")
+end
+
+# Print information about frame data
+println("Number of frames: $(length(frame_data))")
+println("Dimensions of first frame: $(size(frame_data[1]))")
+
+gr()
+
+idx = 750
+p1 = contour(frame_data[idx], levels = 20, fill=true)
+(x,y) = find_hotspot_center(frame_data[idx])
+println("$x, $y")
+scatter!(p1, [x], [y])
+
+gui()
