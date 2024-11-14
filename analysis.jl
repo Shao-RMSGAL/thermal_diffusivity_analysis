@@ -6,22 +6,33 @@ include("video_parsing.jl")
 include("find_hotspot_center.jl")
 include("output.jl")
 
-function extract_circle_average_temp(matrix, slices, x, y, scale_dist, rad_slices, frame_size)
+function extract_circle_average_temp(
+    matrix,
+    slices,
+    x,
+    y,
+    scale_dist,
+    rad_slices,
+    frame_size,
+)
     mat_size = size(matrix)
     x = x * frame_size[1] / mat_size[1]
     y = y * frame_size[2] / mat_size[2]
     radii = range(1, minimum(frame_size) / 2, length = slices) # It was slices - 1, not sure why
-    
-    T̅ = OrderedDict{Float64,Float64}()
+
+     T̅ = OrderedDict{Float64,Float64}()
     θ = range(0, 2π, rad_slices)
     for r in radii
         x₁ = round.(Int, (x .+ r * cos.(θ)) .* mat_size[1] ./ frame_size[1])
         y₁ = round.(Int, (y .+ r * sin.(θ)) .* mat_size[1] ./ frame_size[1])
-        try # Sometimes the spot isn't centered, and the algorithm will try to get a temperature
-                # on a portion of the ring that is outside of the region of interest.
-            T̅[r * scale_dist] = mean([matrix[i, j] for (i, j) in zip(x₁, y₁)])
-        catch e
-            break
+         T̅[r * scale_dist] = begin
+            values = Float64[]
+            for (i, j) in zip(x₁, y₁)
+                if 0 < i < size(matrix, 1) && 0 < j < size(matrix, 2)
+                        push!(values, matrix[i, j])
+                end
+            end
+            mean(values)
         end
     end
      return T̅
@@ -63,8 +74,15 @@ function run_analysis(
         (x, y) = find_hotspot_center(matrix)
 
         maxes[idx - start_frame + 1] = matrix[x, y]
-        average_radial_temperatures[idx - start_frame + 1] =
-            extract_circle_average_temp(matrix, slices, x, y, scale_dist, rad_slices, size(frame_data[1]))
+        average_radial_temperatures[idx - start_frame + 1] = extract_circle_average_temp(
+            matrix,
+            slices,
+            x,
+            y,
+            scale_dist,
+            rad_slices,
+            size(frame_data[1]),
+        )
 
         # ϕ = 22.5u"°"
         frac = 0.5
@@ -76,17 +94,6 @@ function run_analysis(
         push!(Mat, matrix)
 
         if do_graphing
-            gr()
-            default(
-                # aspect_ratio = :equal,
-                legend = :topleft,
-                xlabel = "x (μm)",
-                ylabel = "y (μm)",
-                zlabel = "Temp (K)",
-                title = "Temperature of Frame $idx",
-                xlims = (minimum(x_range), maximum(x_range)),
-                ylims = (minimum(y_range), maximum(y_range)),
-            )
             p1 = surface(
                 x_range,
                 y_range,
@@ -94,6 +101,13 @@ function run_analysis(
                 levels = 20,
                 fill = true,
                 aspect_ratio = :equal,
+                legend = :topleft,
+                xlabel = "x (μm)",
+                ylabel = "y (μm)",
+                zlabel = "Temp (K)",
+                title = "Temperature of Frame $idx",
+                xlims = (minimum(x_range), maximum(x_range)),
+                ylims = (minimum(y_range), maximum(y_range)),
             )
             scatter!(
                 p1,
@@ -110,7 +124,7 @@ function run_analysis(
                 label = "Circle",
                 width = 10,
             )
-            gui(p1)
+            savefig("./output/heat_map/heat_map_$idx.png")
         end
     end
     return average_radial_temperatures, maxes, Mat, size(frame_data[1])

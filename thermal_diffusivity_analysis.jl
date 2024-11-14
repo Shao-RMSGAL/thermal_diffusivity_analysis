@@ -13,7 +13,7 @@ include("filtering.jl")
 
 # Modify this data!
 write_output = false # Write temperature over time data to CSV 
-show_temp_over_time = true # Show temperature for multiple frames
+show_temp_over_time = false # Show temperature for multiple frames
 do_graphing = false # Only enable if you are investigating a single frame
 rad_slices = 100 # Number of slices to break a circle into along the circumerence
 slices = 100 # Number of radius slices to extract average temperature from
@@ -72,4 +72,4 @@ if write_output
     end
 end
 
-diffusivity_calculation(T_data, maxes, Mat, frame_size, scale_dist, true, false, frame_rate)
+diffusivity_calculation(T_data, maxes, Mat, frame_size, scale_dist, false, true, frame_rate)
