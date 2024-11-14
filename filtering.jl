@@ -98,54 +98,54 @@ function diffusivity_calculation(
     #  end
         
     if animate
-        #  xlimits = (minimum(ri), maximum(ri))
-        #  ylimits = (minimum(Ti) - 5, maximum(maxes) + 2)
-        #  anim = @animate for i ∈ 1:frames
-        #      index = dropoff_idx + i
-        #      r = collect(keys(T_data[index]))
-        #      T = collect(values(T_data[index]))
-        #      l = @layout [
-        #          a{0.4w} b{0.6w}
-        #      ]
+        xlimits = (minimum(ri), maximum(ri))
+        ylimits = (minimum(Ti) - 5, maximum(maxes) + 2)
+        anim = @animate for i ∈ 1:frames
+            index = dropoff_idx + i
+            r = collect(keys(T_data[index]))
+            T = collect(values(T_data[index]))
+            l = @layout [
+                a{0.4w} b{0.6w}
+            ]
 
-        #      sctr_plt = scatter(
-        #              plt_anim,
-        #              r,
-        #              T,
-        #              xlim = xlimits,
-        #              ylim = ylimits,
-        #              xlabel = "Radial distance (μm)",
-        #              ylabel = "Temperature (K)",
-        #              label = "Data",
-        #              legend = :topright,
-        #          )
-        #      twin_sctr = twinx(sctr_plt)
-        #      plot!(
-        #          twin_sctr,
-        #          r,
-        #          du2_dr[i + 1],
-        #          label = "Δ(T)",
-        #          legend = :right,
-        #          ylim = (minimum(du2_dr[1]), maximum(du2_dr[1])*100)
-        #      )
-        #      plot(
-        #          sctr_plt,
-        #          surface(
-        #              x_grid,
-        #              y_grid,
-        #              Mat[index],
-        #              xlabel = "x-position (μm)",
-        #              ylabel = "y-position (μm)",
-        #              zlabel = "Temperature (K)",
-        #              zlims = ylimits,
-        #              clims = ylimits,
-        #          ),
-        #          size = (1920, 1080),
-        #          title = "Animation of temperature over time (frame $index)",
-        #          layout = l,
-        #      )
-        #  end
-        #  mp4(anim, "./output/flattening.mp4", fps = 24)
+            sctr_plt = scatter(
+                    plt_anim,
+                    r,
+                    T,
+                    xlim = xlimits,
+                    ylim = ylimits,
+                    xlabel = "Radial distance (μm)",
+                    ylabel = "Temperature (K)",
+                    label = "Data",
+                    legend = :topright,
+                )
+            twin_sctr = twinx(sctr_plt)
+            plot!(
+                twin_sctr,
+                r,
+                du2_dr[i + 1],
+                label = "Δ(T)",
+                legend = :right,
+                ylim = (minimum(du2_dr[1]), maximum(du2_dr[1])*100)
+            )
+            plot(
+                sctr_plt,
+                surface(
+                    x_grid,
+                    y_grid,
+                    Mat[index],
+                    xlabel = "x-position (μm)",
+                    ylabel = "y-position (μm)",
+                    zlabel = "Temperature (K)",
+                    zlims = ylimits,
+                    clims = ylimits,
+                ),
+                size = (1920, 1080),
+                title = "Animation of temperature over time (frame $index)",
+                layout = l,
+            )
+        end
+        gif(anim, "./output/flattening.gif", fps = 15)
        
     ylimits = (minimum(T_by_rad[end]), maximum(filter(!isnan, T_by_rad[1])))
         println(T_by_rad[1])
@@ -159,7 +159,7 @@ function diffusivity_calculation(
             ) 
             ylims!(p1, ylimits)
         end
-        mp4(anim, "./output/radial_T_vs_time.mp4", fps = 24)
+        gif(anim, "./output/radial_T_vs_time.gif", fps = 15)
     end
 
     if plotting

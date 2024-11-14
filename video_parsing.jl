@@ -62,8 +62,13 @@ function parse_thermal_video(file_path)
         push!(frame_data, reduce(vcat, transpose.(current_frame)))
     end
 
+    # Apply calibration
+    T = [25, 100, 200, 300, 400, 500]
+    IR = [24.82, 74.66, 142.73, 217.38, 294.7, 364.8]
+    calib = linear_interpolation(IR, T, extrapolation_bc = Line())
+
     for i = 1:size(frame_data, 1)
-        frame_data[i] .+= 273.15
+        frame_data[i] = calib.(frame_data[i]) .+ 273.15
     end
 
     return aux_data, frame_data
