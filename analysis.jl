@@ -18,7 +18,7 @@ function extract_circle_average_temp(
     mat_size = size(matrix)
     x = x * frame_size[1] / mat_size[1]
     y = y * frame_size[2] / mat_size[2]
-    radii = range(1, minimum(frame_size) / 2, length = slices) # It was slices - 1, not sure why
+    radii = range(.1, minimum(frame_size) / 2, length = slices) # It was slices - 1, not sure why
 
      T̅ = OrderedDict{Float64,Float64}()
     θ = range(0, 2π, rad_slices)
