@@ -35,7 +35,7 @@ function extract_circle_average_temp(
             mean(values)
         end
     end
-     return T̅
+    return T̅, @. radii * mat_size[1] ./ frame_size[1]
 end
 
 # Define the run_analysis function (replace with your actual analysis logic)
@@ -67,14 +67,15 @@ function run_analysis(
     average_radial_temperatures =
         [OrderedDict{Float64,Float64}() for _ = 1:(end_frame - start_frame + 1)]
     maxes = zeros(end_frame - start_frame + 1)
-
+    
+    radii = []
 
     for idx = start_frame:end_frame
         matrix = interpolate_data(frame_data[idx], dims)
         (x, y) = find_hotspot_center(matrix)
 
         maxes[idx - start_frame + 1] = matrix[x, y]
-        average_radial_temperatures[idx - start_frame + 1] = extract_circle_average_temp(
+        average_radial_temperatures[idx - start_frame + 1], radii = extract_circle_average_temp(
             matrix,
             slices,
             x,
@@ -127,6 +128,6 @@ function run_analysis(
             savefig("./output/heat_map/heat_map_$idx.png")
         end
     end
-    return average_radial_temperatures, maxes, Mat, size(frame_data[1])
+    return average_radial_temperatures, maxes, Mat, size(frame_data[1]), radii
 end
 

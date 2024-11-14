@@ -26,6 +26,7 @@ file_path = "./BoxData/Q 200 Cermic 2.csv" # File name
 #  file_path = "./Sample2_Extracted Data/Sample2 100 M1.csv" # File name
 output_directory = "./output"   # Output directory
 frame_rate = 24.0 # Framerate
+animate = false # Only turn on if animatingc
 # (warning, this will generate end_frame - start_frame .cvs
 # files in the directory you specify. Ensure the directory exists.)
 
@@ -38,7 +39,7 @@ frame_rate = 24.0 # Framerate
 # include("thermal_diffusivity_analysis")
 # To run the script again quickly. If you run the first line, you will be restarting
 # julia over and over, which will take a long time.
-T_data, maxes, Mat, frame_size = run_analysis(
+T_data, maxes, Mat, frame_size, radii = run_analysis(
     file_path,
     start_frame,
     end_frame,
@@ -72,4 +73,4 @@ if write_output
     end
 end
 
-diffusivity_calculation(T_data, maxes, Mat, frame_size, scale_dist, false, true, frame_rate)
+diffusivity_calculation(T_data, maxes, Mat, frame_size, scale_dist, do_graphing, animate, frame_rate, radii, rad_slices)

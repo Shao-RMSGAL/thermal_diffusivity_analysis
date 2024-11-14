@@ -1,4 +1,5 @@
 using Plots
+using Plots.PlotMeasures
 using SavitzkyGolay
 using FiniteDifferences
 using Interpolations
@@ -13,6 +14,8 @@ function diffusivity_calculation(
     plotting,
     animate,
     frame_rate,
+    radii,
+    rad_slices,
 )
     window = round(Int64, length(maxes) / 100)
     if window % 2 == 0
@@ -36,7 +39,7 @@ function diffusivity_calculation(
     t_min = 0
     t_max = 10
     frames = 0
-    while t_max - t_min > 0.1
+    while t_max - t_min > 1
         T = collect(values(T_data[dropoff_idx + frames])) # radius in K
         t_min = minimum(T)
         t_max = maximum(T)
@@ -52,15 +55,15 @@ function diffusivity_calculation(
     end
 
 
-    for frame in dropoff_idx:dropoff_idx + frames
+    for frame = dropoff_idx:(dropoff_idx + frames)
         r = collect(keys(T_data[frame]))
         T = collect(values(T_data[frame]))
         for (rad_idx, _) in enumerate(r)
             push!(T_by_rad[rad_idx], T[rad_idx])
         end
     end
-    
-    du_dt = Vector{Vector{Float64}}() 
+
+    du_dt = Vector{Vector{Float64}}()
     for T_vec in T_by_rad
         r = collect(keys(T_data[1]))
         params = ceil(Int64, length(T_vec) / 2)
@@ -71,10 +74,10 @@ function diffusivity_calculation(
     end
 
     du2_dr = Vector{Vector{Float64}}()
-        
-    for i in dropoff_idx:dropoff_idx + frames
+
+    for i = dropoff_idx:(dropoff_idx + frames)
         r_l = collect(keys(T_data[i]))
-        T_l =  collect(values(T_data[i]))
+        T_l = collect(values(T_data[i]))
 
         #  println("Frame: $i")
         params = length(T_l)
@@ -84,22 +87,33 @@ function diffusivity_calculation(
 
         first_deriv = savitzky_golay(T_l, params, 2, deriv = 1).y ./ (r_l[2] - r_l[1])
         second_deriv = savitzky_golay(T_l, params, 3, deriv = 2).y ./ (r_l[2] - r_l[1])^2
-        laplace = second_deriv .+ (1.0./r_l) .* first_deriv
+        laplace = second_deriv .+ (1.0 ./ r_l) .* first_deriv
         push!(du2_dr, laplace)
 
     end
 
-    #  α = zeros(length(du_dt), maximum(length.(du2_dr)))
+    α = zeros(Union{Missing, Float64}, length(du2_dr), length(du_dt))
 
-    #  for (t, t_val) in enumerate(du_dt)
-    #      for (x, x_val) in enumerate(du2_dr[t])
-    #          α[t, x] = t_val / x_val
-    #      end
-    #  end
-        
+    for (frame_idx, lap) in enumerate(du2_dr)
+        for (rad_idx, val) in enumerate(lap)
+            dT = du_dt[rad_idx][frame_idx]
+            ΔT = lap[rad_idx]
+
+            if abs(dT) > 1 && abs(ΔT) > 5e-6
+                α[frame_idx, rad_idx] = dT/ΔT
+            else
+                α[frame_idx, rad_idx] = missing
+            end
+
+        end
+    end
+
+    println("Mean: $(mean(α))")
+    println("Std. Dev: $(std(α))")
+
     if animate
         xlimits = (minimum(ri), maximum(ri))
-        ylimits = (minimum(Ti) - 5, maximum(maxes) + 2)
+        ylimits = (minimum(Ti) - 5, maximum(maxes) + 5)
         anim = @animate for i ∈ 1:frames
             index = dropoff_idx + i
             r = collect(keys(T_data[index]))
@@ -109,16 +123,16 @@ function diffusivity_calculation(
             ]
 
             sctr_plt = scatter(
-                    plt_anim,
-                    r,
-                    T,
-                    xlim = xlimits,
-                    ylim = ylimits,
-                    xlabel = "Radial distance (μm)",
-                    ylabel = "Temperature (K)",
-                    label = "Data",
-                    legend = :topright,
-                )
+                plt_anim,
+                r,
+                T,
+                xlim = xlimits,
+                ylim = ylimits,
+                xlabel = "Radial distance (μm)",
+                ylabel = "Temperature (K)",
+                label = "Data",
+                legend = :topright,
+            )
             twin_sctr = twinx(sctr_plt)
             plot!(
                 twin_sctr,
@@ -126,7 +140,7 @@ function diffusivity_calculation(
                 du2_dr[i + 1],
                 label = "Δ(T)",
                 legend = :right,
-                ylim = (minimum(du2_dr[1]), maximum(du2_dr[1])*100)
+                ylim = (minimum(du2_dr[1]), maximum(du2_dr[1]) * 100),
             )
             plot(
                 sctr_plt,
@@ -146,18 +160,70 @@ function diffusivity_calculation(
             )
         end
         gif(anim, "./output/flattening.gif", fps = 15)
+
+        ylimits = (minimum(T_by_rad[end]), maximum(filter(!isnan, T_by_rad[1])))
+        circ_limits = (-maximum(radii), maximum(radii))
        
-    ylimits = (minimum(T_by_rad[end]), maximum(filter(!isnan, T_by_rad[1])))
-        println(T_by_rad[1])
-        anim = @animate for T_vec ∈ T_by_rad  
-            p1 = plot(
+        min = maximum(du_dt[1])
+        max = minimum(du_dt[1])
+        for val in du_dt
+            if minimum(val) < min
+                min = minimum(val)
+            end
+            if maximum(val) > max
+                max = maximum(val)
+            end
+        end
+
+        diff_y_lim = (min, max)
+        anim = @animate for (T_vec, dT, r) ∈ zip(T_by_rad, du_dt, radii)
+            graph = plot(
+                #  1:length(T_vec) ./ frame_rate,
                 T_vec,
-                label="Data",
-                xlabel="Time (s)",
-                ylabel="Temperature (K)",
-                legend=:topright,
-            ) 
-            ylims!(p1, ylimits)
+                title = "Temperature vs. time",
+                label = "Data",
+                xlabel = "Time (frame)",
+                ylabel = "Temperature (K)",
+                legend = :topright,
+            )
+            ylims!(graph, ylimits)
+
+            θ = range(0, 2π, length = rad_slices)
+            x = r .* cos.(θ)
+            y = r .* sin.(θ)
+
+            circ = plot(
+                x,
+                y,
+                title = "Radial position ($(round(r, sigdigits = 5)) μm)",
+                xlabel = "x distance from center (μm)",
+                ylabel = "y distance from center (μm)",
+                label = "Radial position",
+                aspect_ratio = :equal,
+                legend = (true, :right),
+            )
+            scatter!(
+                circ,
+                [0],
+                [0],
+                label = "hotspot"
+            )
+            xlims!(circ, circ_limits)
+            ylims!(circ, circ_limits)
+
+            diff_twin = twinx(graph)
+            diff = plot!(
+                diff_twin,
+                #  1:length(T_vec) ./ frame_rate,
+                dT,
+                label = "Derivative",
+                color = :red,
+                ylabel = "Temperature derivative (K/s)",
+                legend = :right,
+            )
+            ylims!(diff_twin, diff_y_lim)
+
+            p1 = plot(graph, circ, size = (1920, 1080), margin = 20mm)
         end
         gif(anim, "./output/radial_T_vs_time.gif", fps = 15)
     end
@@ -183,7 +249,7 @@ function diffusivity_calculation(
         #  plot!(p1_twin, x, filtered_2d.y, label = "second derivative", ylabel = "d²T")
         vline!(
             p1_twin,
-            x,
+            xjk,
             [dropoff_idx],
             label = "Dropoff",
             legend = :bottomright,
@@ -195,7 +261,7 @@ function diffusivity_calculation(
 
         p2 = scatter(ri, Ti, xlabel = "Radius", ylabel = "Temperature (K)", label = "data")
         plot!(r, savitzky_golay(T, 5, 2).y, label = "smoothed")
-        
+
         #  p3 = surface(α)
         p4 = plot(du_dt)
 
@@ -204,4 +270,6 @@ function diffusivity_calculation(
         #  savefig(p3, "./output/diffusivity.png")
         savefig(p4, "./output/du_dt.png")
     end
+    
+    return α
 end
