@@ -25,31 +25,33 @@ include("structs.jl")
 # To run the script again quickly. If you run the first line, you will be restarting
 # julia over and over, which will take a long time.
 options = Options(
-    file_path = "./Sample2_Extracted Data/Sample2 100 M1.csv",
+    filename = "./Sample2_Extracted Data/Sample2 100 M1.csv",
 );
-T_data, maxes, Mat, frame_size, radii = run_analysis(options)
+diffusivitydata = run_analysis(options)
 
-gr()
+plot(diffusivitydata[!, "Maximum Temperatures"])
+gui()
+#  gr()
 
-if options.write_output
-    for (idx, frame) in enumerate(T_data)
-        df = DataFrame(
-            "Radius (μm)" => collect(keys(frame)),
-            "Temperature (K)" => collect(values(frame)),
-        )
-        CSV.write("$output_directory/frame_$(start_frame + idx - 1).csv", df)
-    end
-end
+    #  for (idx, frame) in enumerate(T_data)
+#          if options.writeoutput
+#          df = DataFrame(
+#              "Radius (μm)" => collect(keys(frame)),
+#              "Temperature (K)" => collect(values(frame)),
+#          )
+#          CSV.write("$options.output_directory/frame_$(options.start_frame + idx - 1).csv", df)
+#      end
+#  end
 
-diffusivity_calculation(
-    T_data,
-    maxes,
-    Mat,
-    frame_size,
-    options.scale_dist,
-    options.do_graphing,
-    options.animate,
-    options.frame_rate,
-    radii,
-    options.rad_slices,
-)
+#  diffusivity_calculation(
+#      T_data,
+#      maxes,
+#      Mat,
+#      frame_size,
+#      options.scale_dist,
+#      options.do_graphing,
+#      options.animate,
+#      options.frame_rate,
+#      radii,
+#      options.rad_slices,
+#  )

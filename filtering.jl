@@ -115,12 +115,9 @@ function diffusivity_calculation(
     )
 
     if animate
-        println("test 1")
         xlimits = (minimum(ri), maximum(ri))
         ylimits = (minimum(Ti) - 5, maximum(maxes) + 5)
-        println("test 2")
         anim = @animate for i ∈ 1:frames
-            println("test 3")
             index = dropoff_idx + i
             r = collect(keys(T_data[index]))
             T = collect(values(T_data[index]))
@@ -128,7 +125,6 @@ function diffusivity_calculation(
                 a{0.4w} b{0.6w}
             ]
 
-            println("test 4")
             #  sctr_plt = scatter(
             #      plt_anim,
             #      r,
@@ -140,7 +136,6 @@ function diffusivity_calculation(
             #      label = "Data",
             #      legend = :topright,
             #  )
-            #  println("test 5")
             #  twin_sctr = twinx(sctr_plt)
             #  plot!(
             #      twin_sctr,
@@ -159,8 +154,7 @@ function diffusivity_calculation(
                     zlabel = "Temperature (K)",
                     zlims = ylimits,
                     clims = ylimits,
-                ),
-            println("test 6")
+                )
             #  plot(
             #      sctr_plt,
             #      surf,
@@ -169,9 +163,7 @@ function diffusivity_calculation(
             #      layout = l,
             #  )
         end
-        println("test 7")
         gif(anim, "./output/flattening.gif", fps = 15)
-        println("test 8")
 
         #  ylimits = (minimum(T_by_rad[end]), maximum(filter(!isnan, T_by_rad[1])))
         #  circ_limits = (-maximum(radii), maximum(radii))

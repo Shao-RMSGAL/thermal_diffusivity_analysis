@@ -2,7 +2,7 @@
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "275ad162ce94a9436edfba1bcfdd39ea0e548cbb"
+project_hash = "333321e44daebd910e4253e97bcd90e05fc77fee"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -1189,6 +1189,12 @@ deps = ["LaTeXStrings", "Latexify", "Unitful"]
 git-tree-sha1 = "975c354fcd5f7e1ddcc1f1a23e6e091d99e99bc8"
 uuid = "45397f5d-5981-4c77-b2b3-fc36d6e9b728"
 version = "1.6.4"
+
+[[deps.UnitfulUS]]
+deps = ["Unitful"]
+git-tree-sha1 = "aa8a8a140729fbca8c8d960ab488e0bf6b87feed"
+uuid = "7dc9378f-8956-57ef-a780-aa31cc70ff3d"
+version = "0.2.0"
 
 [[deps.Unzip]]
 git-tree-sha1 = "ca0969166a028236229f63514992fc073799bb78"

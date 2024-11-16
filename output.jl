@@ -1,11 +1,16 @@
+"""
+    printauxdata(auxdata, framedata)
 
-function print_aux_data(aux_data, frame_data)
-    # Print auxiliary data
-    for (key, value) in aux_data
-        println("$key: $value")
+Print auxillary data extracted from a file.
+"""
+function printauxdata(auxdata::OrderedDict{String,Any}, framedata::Vector{Matrix{Float64}})
+    @debug "Printing framedata for" auxdata framedata
+    propertystring = "\n"
+    for (key, value) in auxdata
+        propertystring *= "$key: $value\n"
     end
-    # Print information about frame data
-    println("\nNumber of frames: $(length(frame_data))")
-    println("Dimensions of first frame: $(size(frame_data[1]))\n")
-
+    propertystring *= "Number of frames: $(length(framedata))
+Dimensions of first frame: $(size(framedata[1]))"
+    @info propertystring
+    nothing
 end
