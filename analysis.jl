@@ -1,8 +1,8 @@
 using Plots
 using DataFrames
 using OrderedCollections
-@everywhere using SharedArrays
 using Distributed
+@everywhere using SharedArrays
 
 include("video_parsing.jl")
 include("frame_data_analysis.jl")
@@ -29,17 +29,16 @@ function run_analysis(options::Options)
     printauxdata(aux_data, frame_data)
 
     averageradialtemperatures = Vector{Vector{Union{Float64,Missing}}}(undef, numframes)
-    interpmatrix = Vector{Matrix{Float64}}(undef, numframes)
     for idx = 1:numframes
         averageradialtemperatures[idx] = Vector{Union{Float64,Missing}}(undef, slices)
-        interpmatrix[idx] = Matrix{Float64}(undef, options.interpolationpoints)
     end
-    
+
     maxes = Vector{Float64}(undef, numframes)
-   
-    interpmatrix = SharedArray{Float64}((options.interpolationpoints..., numframes))
+
+    averageradialtemperatures = SharedArray{Float64,2}((slices, numframes))
+    interpmatrix = SharedArray{Float64,3}((options.interpolationpoints..., numframes))
     @info size(interpmatrix)
-    maxes = SharedArray{Float64, 1}(numframes)
+    maxes = SharedArray{Float64,1}(numframes)
 
     radii =
         range(
@@ -49,25 +48,33 @@ function run_analysis(options::Options)
         ) * options.scaledistance
 
     for (i, idx) in enumerate(startframe:endframe)
-        
-        interpolatedata!(interpmatrix[:,:,idx], frame_data[idx], options.interpolationpoints)
-        maxes[i], center = findmax(interpmatrix[:,:,idx])
+
+        interpolatedata!(
+            view(interpmatrix, :, :, idx),
+            frame_data[idx],
+            options.interpolationpoints,
+        )
+        maxes[i], center = findmax(interpmatrix[:, :, idx])
         extractradialtemp!(
-            averageradialtemperatures[i],
-            interpmatrix[:,:,idx],
+            view(averageradialtemperatures, :, idx),
+            interpmatrix[:, :, idx],
             convert(Tuple{Int64,Int64}, center),
             framesize,
             options,
         )
     end
-    
+
     @info "Analysis Complete"
 
     return DataFrame(
         "Frame" => startframe:endframe,
-        "Average Radial Temperatures" => averageradialtemperatures,
+        "Average Radial Temperatures" => [
+            view(averageradialtemperatures, :, i) for
+            i in size(averageradialtemperatures, 2)
+        ],
         "Maximum Temperatures" => maxes,
-        "Interpolated Temperature Matrix" => [view(interpmatrix,:,:,i) for i in size(interpmatrix,3)],
+        "Interpolated Temperature Matrix" =>
+            [view(interpmatrix, :, :, i) for i in size(interpmatrix, 3)],
         "Frame size" => size.(frame_data),
         "Radii" => fill(radii, numframes),
     )

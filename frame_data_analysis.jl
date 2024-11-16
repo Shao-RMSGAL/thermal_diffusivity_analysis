@@ -14,7 +14,7 @@ using Statistics
 Extract the average temperature at different radial distances.
 """
 function extractradialtemp!(
-    radialtemps::Vector{Union{Float64,Missing}},
+    radialtemps::SubArray,
     matrix::Matrix{Float64},
     center::Tuple{Int64,Int64},
     framesize::Tuple{Int64,Int64},
