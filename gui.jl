@@ -1,58 +1,68 @@
 using Gtk4
+using Distributed
+using CSV
 
-function create_file_selector_window()
-    # Create the main window
-    win = GtkWindow("File Selector")
-    set_default_size(win, 800, 500)
+@everywhere include("analysis.jl")
+include("diffusivitycalculation.jl")
+include("output.jl")
 
-    # Create a vertical box to organize widgets
-    vbox = GtkBox(:v)
-    push!(win, vbox)
+function performanalysis(filename)
+    if filename == ""
+        error("No file selected.")
+    end
+    options = Options(filename = filename)
+    diffusivitydata = run_analysis(options)
+    interestdata, α = diffusivitycalculation(diffusivitydata, options)
+    animation = plotdropoff_flattening(diffusivitydata, interestdata, options)
+    return animation, interestdata, α
+end
 
-    # Create a button to open the file chooser dialog
-    choose_button = GtkButton("Choose File")
-    push!(vbox, choose_button)
+filenames = open_dialog(
+    "Pick file(s) to analyse",
+    nothing,
+    ["*.csv"];
+    start_folder = "./BoxData",
+    multiple = true,
+)
 
-    # Create a label to display the selected file path
-    file_label = GtkLabel("No file selected")
-    push!(vbox, file_label)
+if filenames[1] == ""
+    error("No file selected. Cancelled.")
+end
 
-    # Create the "Run Analysis" button
-    run_button = GtkButton("Run Analysis")
-    # Gtk4.set_sensitive(run_button, false)  # Disable initially
-    push!(vbox, run_button)
+@info "Files selected:" filenames
 
-    # Function to handle file selection
-    function on_file_chosen(path)
-        Gtk4.text(file_label, path)
-        # set_sensitive(run_button, true)  # Enable the Run Analysis button
+location = open_dialog("Save the output", nothing; select_folder = true, start_folder = "./output")
+if location == ""
+    error("No file selected. Cancelled.")
+end
+
+@info "Output directory selected:" location
+
+for filename in filenames
+    @info "Analysing:" filename
+    animation, interestdata, α = performanalysis(filename)
+
+    # Create folder
+    dirname = joinpath(location, split(splitdir(filename)[end], ".")[1])
+    if !isdir(dirname)
+        mkdir(dirname)
     end
 
-    # Set up the file chooser dialog
-    function open_file_chooser(widget)
-        dialog = GtkFileChooserDialog(
-            "Choose a file",
-            widget,
-            Gtk4.FileChooserAction_OPEN,
-            ("_Cancel", Gtk4.ResponseType_CANCEL, "_Open", Gtk4.ResponseType_ACCEPT),
+    gif(animation, joinpath(dirname, "flattening.gif"), fps = 10)
+    for item in eachrow(interestdata)
+        frame = item.Frame
+        df = DataFrame(
+        "Average Radial Temperature (°C)"=>item["Average Radial Temperatures"],
+        "Radius (μm)"=>collect(item["Radii"]),
+        "∇²T (K/μm²)"=>item["∇²T"],
+        "δT/δt (K/s)"=>item["δT/δt"],
+        "α (μm²/s)"=>item["α"],
         )
-        response = run(dialog)
-        if response == Gtk4.ResponseType_ACCEPT
-            #  file_path = get_filename(dialog)
-            on_file_chosen(file_path)
+        if !isdir(joinpath(dirname,"data"))
+            mkdir(joinpath(dirname,"data"))
         end
-        destroy(dialog)
+        CSV.write(joinpath(dirname, "data", "frame_$frame.csv"), df)
+        CSV.write(joinpath(dirname, "diffusivity.csv"), DataFrame("Diffusivity (mm²/s)"=>α[1],"Uncertainty (mm²/s)"=>α[2]))
     end
-
-    # Connect the Choose File button to the file chooser function
-    signal_connect(open_file_chooser, choose_button, "clicked")
-
-    # Connect the Run Analysis button to the analysis function
-    signal_connect(run_button, "clicked") do widget
-        file_path = get_text(file_label)
-        run_analysis(file_path)
-    end
-
-    # Show all widgets
-    show(win)
+    @info "Saved analysis:" dirname
 end

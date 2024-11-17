@@ -60,7 +60,12 @@ function plotdropoff_flattening(totaldata::DataFrame, data::DataFrame, options::
             length = options.interpolationpoints[2],
         ) * options.scaledistance,
     )
-       
+
+    window = round_to_odd(11)
+    params = 5
+    @info "Filtering settings" window params
+    filtered = savitzky_golay(allmaxes, window, params, deriv = 0).y
+      
     anim = @animate for i ∈ 1:framecount
         l = @layout [a b{.6w, 1.0h}; c{0.3h}]
 
@@ -122,6 +127,10 @@ function plotdropoff_flattening(totaldata::DataFrame, data::DataFrame, options::
             label = "Data",
             legend = :topright,
         )
+        plot!(
+            filtered,
+            label = "Smoothed",
+        )
         vline!(
             fullrange,
             [frameofdropoff],
@@ -141,12 +150,12 @@ function plotdropoff_flattening(totaldata::DataFrame, data::DataFrame, options::
             size = (1920, 1080),
             left_margin = [12mm 12mm],
             bottom_margin = [12mm 12mm],
-            suptitle = "Animation of temperature over time (frame $(data[i, "Frame"]))",
+        suptitle = "$(splitdir(options.filename)[end])\nAnimation of temperature over time (frame $(data[i, "Frame"]))",
             layout = l,
         )
     end
-    gif(anim, "./output/flattening.gif", fps = 10)
     @info "Dropoff plotting complete"
+    return anim
 end
 
 #  function produceplots(totaldata::DataFrame, interestdata::DataFrame)
