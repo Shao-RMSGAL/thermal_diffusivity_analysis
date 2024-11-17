@@ -2,7 +2,7 @@ module ThermalDiffusivityGUI
 using CSV: read, write
 using DataFrames: DataFrame
 using Distributed: @everywhere, @sync, @distributed
-using Gtk4: open_dialog, GLib, GFile
+using Gtk4: open_dialog, GLib, GFile, GtkWindow, GtkLabel, show, push!
 using Interpolations: linear_interpolation, Line, interpolate, BSpline, Quadratic, OnGrid
 using OrderedCollections: OrderedDict
 using Plots

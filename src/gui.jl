@@ -18,9 +18,14 @@ end
 Complete analysis with userprompt.
 """
 function main()
+    win = GtkWindow("ThermalDiffusivityGUI", 400, 200)
+    label = GtkLabel("Thermal Diffusivity Window. Close when finished.")
+    push!(win, label)
+    show(win)
+
     filenames = open_dialog(
         "Pick file(s) to analyse",
-        nothing,
+        win,
         ["*.csv"];
         start_folder = "./data",
         multiple = true,
@@ -34,7 +39,7 @@ function main()
 
     location = open_dialog(
         "Save the output",
-        nothing;
+        win;
         select_folder = true,
         start_folder = "./output",
     )
