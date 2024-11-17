@@ -9,7 +9,7 @@ using Distributed
 
 @everywhere include("analysis.jl")
 include("diffusivitycalculation.jl")
-in_clude("structs.jl")
+include("structs.jl")
 
 # (warning, this will generate end_frame - start_frame .cvs
 # files in the directory you specify. Ensure the directory exists.)
@@ -24,11 +24,12 @@ in_clude("structs.jl")
 # To run the script again quickly. If you run the first line, you will be restarting
 # julia over and over, which will take a long time.
 options = Options(
-    filename = "./Sample2_Extracted Data/Sample2 100 M1.csv",
+    filename = "./BoxData/Q 200 Silver 1.csv",
 );
 diffusivitydata = run_analysis(options)
-diffusivitycalculation(diffusivitydata, options)
-nothing
+interestdata = diffusivitycalculation(diffusivitydata, options)
+
+plotdropoff_flattening(diffusivitydata, interestdata, options)
 
 #  gr()
 

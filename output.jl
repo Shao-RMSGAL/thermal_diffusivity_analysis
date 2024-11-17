@@ -1,3 +1,9 @@
+using Plots
+using Plots.Measures
+
+
+include("structs.jl")
+
 """
     printauxdata(auxdata, framedata)
 
@@ -14,3 +20,172 @@ Dimensions of first frame: $(size(framedata[1]))"
     @info propertystring
     nothing
 end
+
+"""
+    plotdropoff_flattening(data::DataFrame, options::Options)
+Create an animated plot of the radial temperature distribution
+alongside the surface plot.
+"""
+function plotdropoff_flattening(totaldata::DataFrame, data::DataFrame, options::Options)
+    #  pythonplot();
+    gr()
+    @info "Starting dropoff plotting"
+    radii = data[!, "Radii"]
+    radialtempbyframe = data[!, "Average Radial Temperatures"]
+    maxes = data[!, "Maximum Temperatures"]
+    tempmatrixovertime = data[!, "Interpolated Temperature Matrix"]
+    allmaxes = totaldata[!, "Maximum Temperatures"]
+    laplacian_over_radius = data[!, "∇²T"]
+    timederivative_over_radius = data[!, "δT/δt"]
+    framecount = length(radialtempbyframe)
+    ylimitsdata = (minimum(minimum.(radialtempbyframe)), maximum(maxes))
+    ylimitssurface = (minimum(minimum.(tempmatrixovertime)), maximum(maxes))
+    ylimitslaplacian =
+        (minimum(minimum.(laplacian_over_radius)), maximum(maximum.(laplacian_over_radius)))
+    ylimitstimederiv =
+        (minimum(minimum.(timederivative_over_radius)), maximum(maximum.(timederivative_over_radius)))
+    framesize = (data[1, "Frame size"])
+    frameofdropoff = findfirst(isequal(data[1,"Frame"]), totaldata[!,"Frame"])
+    xgrid = collect(
+        range(
+            0,
+            framesize[1] - 1,
+            length = options.interpolationpoints[1],
+        ) * options.scaledistance,
+    )
+    ygrid = collect(
+        range(
+            0,
+            framesize[2] - 1,
+            length = options.interpolationpoints[2],
+        ) * options.scaledistance,
+    )
+       
+    anim = @animate for i ∈ 1:framecount
+        l = @layout [a b{.6w, 1.0h}; c{0.3h}]
+
+        scatterplot = scatter(
+            radii[i],
+            radialtempbyframe[i],
+            xformatter=_->"",
+            ylim = ylimitsdata,
+            ylabel = "T (°C)",
+            legend = false,
+        )
+        laplacian = laplacian_over_radius[i]
+        timederivative = timederivative_over_radius[i]
+        laplaceplot = plot(
+            collect(radii[i]),
+            laplacian * 1.0e6,
+            xlabel = "Radial distance (μm)",
+            ylabel = "∇²T (K/mm²)",
+            legend = false,
+            ylim = ylimitslaplacian .* 1.0e6,
+        )
+        timederivplot = plot(
+            collect(radii[i]),
+            timederivative,
+            xformatter=_->"",
+            ylabel = "δT/δt (K/s)",
+            legend = false,
+            ylim = ylimitstimederiv,
+        )
+        surf = surface(
+            xgrid,
+            ygrid,
+            tempmatrixovertime[i],
+            xlabel = "x-position (μm)",
+            ylabel = "y-position (μm)",
+            zlabel = "Temperature (K)",
+            xtickfontsize = 8,
+            ytickfontsize = 8,
+            ztickfontsize = 8,
+            ctickfontsize = 8,
+            xguidefontsize = 8,
+            yguidefontsize = 8,
+            zguidefontsize = 8,
+            zlims = ylimitssurface,
+            clims = ylimitssurface,
+            size = (1920, 1080, ),
+            margin = 0mm,
+        )
+        radialtempplot = plot(
+            scatterplot,
+            timederivplot,
+            laplaceplot, 
+            layout = grid(3,1),
+        )
+        fullrange = plot(
+            allmaxes, 
+            xlabel="Frame",
+            ylabel="Maximum Temperature (°C)",
+            label = "Data",
+            legend = :topright,
+        )
+        vline!(
+            fullrange,
+            [frameofdropoff],
+            style=:dash,
+            label = "Dropoff frame $frameofdropoff"
+        )
+        vline!(
+            fullrange,
+            [frameofdropoff + i],
+            style=:dash,
+            label = "Current frame $(frameofdropoff + i)"
+        )
+        plot(
+            radialtempplot,
+            surf,
+            fullrange,
+            size = (1920, 1080),
+            left_margin = [12mm 12mm],
+            bottom_margin = [12mm 12mm],
+            suptitle = "Animation of temperature over time (frame $(data[i, "Frame"]))",
+            layout = l,
+        )
+    end
+    gif(anim, "./output/flattening.gif", fps = 10)
+    @info "Dropoff plotting complete"
+end
+
+#  function produceplots(totaldata::DataFrame, interestdata::DataFrame)
+#      println("Starting")
+#      default(
+#  xlim=(1000,1150),
+#  ylim=(400,405),
+#      size = (800, 600),
+#  )
+#  p1 = scatter(x, maxes, label = "data", markersize = 2, color = :black)
+#  p1_twin = twinx(p1)
+#  plot!(
+#      p1,
+#      x,
+#      savitzky_golay(maxes, 21, 1).y,
+#      label = "smoothed curve",
+#      xlabel = "Frame",
+#      ylabel = "Temperature",
+#      color = :orange,
+#  )
+#  plot!(p1_twin, x, filtered_1d.y, label = "first derivative", ylabel = "dT")
+#  plot!(p1_twin, x, filtered_2d.y, label = "second derivative", ylabel = "d²T")
+#  vline!(
+#      p1_twin,
+#      x,
+#      [dropoffindex],
+#      label = "Dropoff",
+#      legend = :bottomright,
+#      style = :dash,
+#  )
+
+#  r = collect(keys(T_data[dropoffindex])) # radius in μm
+#  T = collect(values(T_data[dropoffindex])) # radius in K
+
+#  p2 = scatter(ri, Ti, xlabel = "Radius", ylabel = "Temperature (K)", label = "data")
+#  plot!(r, savitzky_golay(T, 5, 2).y, label = "smoothed")
+
+#  savefig(p1, "./output/drop_off_location.png")
+#  println("Done")
+#  savefig(p2, "./output/drop_off_distribution.png")
+#  end
+#  end

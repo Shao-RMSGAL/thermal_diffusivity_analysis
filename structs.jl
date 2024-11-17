@@ -30,7 +30,7 @@ struct Options
             endframe::Int64 = 0,
             filename::String = "",
             outputdirectory::String = "./output",
-            framerate::Float64 = 24.0,
+            framerate::Float64 = 30.0,
             animate::Bool = true,
             calibrationfilename::String = "./calibration/calibration.csv",
         )
@@ -50,7 +50,7 @@ struct Options
         endframe::Int64 = 0,
         filename::String = "",
         outputdirectory::String = "./output",
-        framerate::Float64 = 24.0,
+        framerate::Float64 = 30.0,
         animate::Bool = true,
         calibrationfilename::String = "./calibration/calibration.csv",
         minradius::Float64 = 1.0,
