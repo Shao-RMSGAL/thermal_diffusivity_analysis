@@ -15,7 +15,6 @@ include("interpolation.jl")
 Run analysis on thermal diffusivity data using provided options.
 """
 function run_analysis(options::Options)
-
     slices = options.slices
     startframe = options.startframe
     endframe = options.endframe
