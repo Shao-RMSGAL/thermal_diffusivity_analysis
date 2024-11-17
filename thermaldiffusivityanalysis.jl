@@ -5,12 +5,11 @@ using Plots
 using Interpolations
 using Statistics
 using SavitzkyGolay
+using Distributed
 
-include("analysis.jl")
-include("interpolation.jl")
-include("output.jl")
-include("filtering.jl")
-include("structs.jl")
+@everywhere include("analysis.jl")
+include("diffusivitycalculation.jl")
+in_clude("structs.jl")
 
 # (warning, this will generate end_frame - start_frame .cvs
 # files in the directory you specify. Ensure the directory exists.)
@@ -28,9 +27,9 @@ options = Options(
     filename = "./Sample2_Extracted Data/Sample2 100 M1.csv",
 );
 diffusivitydata = run_analysis(options)
+diffusivitycalculation(diffusivitydata, options)
+nothing
 
-plot(diffusivitydata[!, "Maximum Temperatures"])
-gui()
 #  gr()
 
     #  for (idx, frame) in enumerate(T_data)

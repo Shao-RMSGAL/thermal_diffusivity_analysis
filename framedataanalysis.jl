@@ -1,6 +1,7 @@
 include("structs.jl")
 
 using Statistics
+using Distributed
 
 """
     function extractradialtemp!(

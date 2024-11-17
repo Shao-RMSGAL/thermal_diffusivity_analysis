@@ -24,7 +24,7 @@ struct Options
             dographing::Bool = false,
             radialslices::Int64 = 100,
             slices::Int64 = 100,
-            scaledistance::Int64 = 250.0,
+            scaledistance::Float64 = 250.0,
             interpolationpoints::Tuple{Int64,Int64} = (100, 100),
             startframe::Int64 = 0,
             endframe::Int64 = 0,

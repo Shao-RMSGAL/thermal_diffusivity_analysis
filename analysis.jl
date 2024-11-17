@@ -2,10 +2,10 @@ using Plots
 using DataFrames
 using OrderedCollections
 using Distributed
-@everywhere using SharedArrays
+using SharedArrays
 
-include("video_parsing.jl")
-include("frame_data_analysis.jl")
+include("videoparsing.jl")
+include("framedataanalysis.jl")
 include("output.jl")
 include("structs.jl")
 
@@ -47,17 +47,17 @@ function run_analysis(options::Options)
             length = options.slices,
         ) * options.scaledistance
 
-    for (i, idx) in enumerate(startframe:endframe)
-
+    #  @sync @distributed for (i, idx) in enumerate(startframe:endframe)
+    @sync @distributed for i in 1:numframes
         interpolatedata!(
-            view(interpmatrix, :, :, idx),
-            frame_data[idx],
+            view(interpmatrix, :, :, i),
+            frame_data[i],
             options.interpolationpoints,
         )
-        maxes[i], center = findmax(interpmatrix[:, :, idx])
+        maxes[i], center = findmax(interpmatrix[:, :, i])
         extractradialtemp!(
-            view(averageradialtemperatures, :, idx),
-            interpmatrix[:, :, idx],
+            view(averageradialtemperatures, :, i),
+            interpmatrix[:, :, i],
             convert(Tuple{Int64,Int64}, center),
             framesize,
             options,
