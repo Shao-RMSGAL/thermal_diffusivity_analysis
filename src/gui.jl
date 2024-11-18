@@ -19,8 +19,44 @@ Complete analysis with userprompt.
 """
 function main()
     win = GtkWindow("ThermalDiffusivityGUI", 400, 200)
-    label = GtkLabel("Thermal Diffusivity Window. Close when finished.")
-    push!(win, label)
+    toplabel = GtkLabel("Thermal Diffusivity")
+
+    labelsandentries = [
+    (GtkLabel("Current file: "),GtkLabel("")),
+    (GtkLabel("Distance per pixel (μm)"),GtkEntry()),
+    (GtkLabel("Temperature fluctuation threshold (°C)"),GtkEntry()),
+    (GtkLabel("|∇²T| minimum threshold (K/mm²)"),GtkEntry()),
+    (GtkLabel("|δT/δt| minimum threshold (K/s)"),GtkEntry()),
+    ]
+
+    set_gtk_property!(labelsandentries[1][1], "has-tooltip", true)
+    set_gtk_property!(labelsandentries[1][1], "tooltip-text", "The file currently being analyzed.")
+    set_gtk_property!(labelsandentries[2][1], "has-tooltip", true)
+    set_gtk_property!(labelsandentries[2][1], "tooltip-text", "The distance represented by a single pixel in the data being analyzed.")
+    set_gtk_property!(labelsandentries[3][1], "has-tooltip", true)
+    set_gtk_property!(labelsandentries[3][1], "tooltip-text", "Used to determine the minium absolute. value of the time derivative of temperature to consider for diffusivity calculations.")
+    set_gtk_property!(labelsandentries[4][1], "has-tooltip", true)
+    set_gtk_property!(labelsandentries[4][1], "tooltip-text", "Used to determine the minimum absolute value for the Laplacian of temperature to consider for diffusivity coefficient calculations.")
+    #  set_gtk_property!(labelsandentries[5][1], "has-tooltip", true)
+    #  set_gtk_property!(labelsandentries[5][1], "tooltip-text", "Used to determine the minimum absolute value for the Laplacian of temperature to consider for diffusivity coefficient calculations.")
+
+
+    outervbox = GtkBox(:v)
+    set_gtk_property!(outervbox, :vexpand, true)
+    outerhbox = GtkBox(:h)
+    labelgrid = GtkGrid()
+    display = GtkPicture("/home/nathaniel/Code/Julia/ThermalDiffusivityGUI/output/Sample2 700 M2/flattening.gif")
+
+    for (idx,pair) in enumerate(labelsandentries)
+        labelgrid[1, idx] = pair[1]
+        labelgrid[2, idx] = pair[2]
+    end
+
+    push!(outervbox, toplabel)
+    push!(outervbox, outerhbox)
+    push!(outerhbox, labelgrid)
+    push!(outervbox, display)
+    push!(win, outervbox)
     show(win)
 
     filenames = open_dialog(
@@ -50,6 +86,7 @@ function main()
     @info "Output directory selected:" location
 
     for filename in filenames
+
         @info "Analysing:" filename
         animation, interestdata, α = performanalysis(filename)
 

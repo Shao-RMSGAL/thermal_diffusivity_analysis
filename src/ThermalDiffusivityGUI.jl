@@ -1,8 +1,9 @@
 module ThermalDiffusivityGUI
+
+using Distributed: @everywhere, @sync, @distributed
 using CSV: read, write
 using DataFrames: DataFrame
-using Distributed: @everywhere, @sync, @distributed
-using Gtk4: open_dialog, GLib, GFile, GtkWindow, GtkLabel, show, push!
+using Gtk4
 using Interpolations: linear_interpolation, Line, interpolate, BSpline, Quadratic, OnGrid
 using OrderedCollections: OrderedDict
 using Plots
@@ -13,7 +14,6 @@ using Statistics: mean, std
 using Unitful
 
 include("structs.jl")
-
 include("analysis.jl")
 include("diffusivitycalculation.jl")
 include("framedataanalysis.jl")
@@ -21,7 +21,6 @@ include("gui.jl")
 include("interpolation.jl")
 include("output.jl")
 include("videoparsing.jl")
-
 """
     julia_main()
 Run the main program
