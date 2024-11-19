@@ -100,12 +100,12 @@ function main()
         for item in eachrow(interestdata)
             frame = item.Frame
             df = DataFrame(
+            "Radius (μm)" => vcat([0], collect(item["Radii"])),
                 "Average Radial Temperature (°C)" =>
-                    item["Average Radial Temperatures"],
-                "Radius (μm)" => collect(item["Radii"]),
-                "∇²T (K/μm²)" => item["∇²T"],
-                "δT/δt (K/s)" => item["δT/δt"],
-                "α (μm²/s)" => item["α"],
+                vcat(item["Maximum Temperatures"], item["Average Radial Temperatures"]),
+                "∇²T (K/μm²)" => vcat([0],item["∇²T"]),
+                "δT/δt (K/s)" => vcat([0], item["δT/δt"]),
+                "α (μm²/s)" => vcat([0], item["α"]),
             )
             if !isdir(joinpath(dirname, "data"))
                 mkdir(joinpath(dirname, "data"))
