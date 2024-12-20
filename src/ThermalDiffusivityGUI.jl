@@ -1,9 +1,9 @@
 module ThermalDiffusivityGUI
 
-using Distributed: @everywhere, @sync, @distributed
+using Distributed
 using CSV: read, write
 using DataFrames: DataFrame
-using Gtk4
+using Gtk4, Gtk4.GLib
 using Interpolations: linear_interpolation, Line, interpolate, BSpline, Quadratic, OnGrid
 using OrderedCollections: OrderedDict
 using Plots
