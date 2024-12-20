@@ -22,7 +22,7 @@ function run_analysis(options::Options)
         averageradialtemperatures[idx] = Vector{Union{Float64,Missing}}(undef, slices)
     end
 
-    maxes = Vector{Float64}(undef, framecount)
+    maxes = Vector{Float64}(undef, framecount) # TODO: Probably not needed. Test.
 
     averageradialtemperatures = SharedArray{Float64,2}((slices, framecount))
     interpmatrix = SharedArray{Float64,3}((options.interpolationpoints..., framecount))
