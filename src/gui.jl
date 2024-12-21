@@ -329,6 +329,10 @@ function main()
     win = GtkWindow("ThermalDiffusivityGUI", 1600, 900)
     toplabel = GtkLabel("Thermal Diffusivity")
 
+    if !isdir("output")
+        mkdir("output")
+    end
+
     options = Options()
 
     choosedatafilebutton = GtkButton("Choose Data File(s)"; action_name = "win.choosedatafiles")
