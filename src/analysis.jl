@@ -3,11 +3,14 @@
 Run analysis on thermal diffusivity data using provided options.
 """
 function run_analysis(options::Options)
+    @info "Running initial analysis with options" options
     slices = options.slices
     startframe = options.startframe
     endframe = options.endframe
 
     aux_data, framedata = parsevideo(options.filename, options.calibrationfilename)
+
+    @info "Parsing video data complete:" options.calibrationfilename
     startframe = (startframe == 0) ? 1 : startframe
     endframe = (endframe == 0) ? size(framedata, 1) : endframe
     framedata = framedata[startframe:endframe]
@@ -22,7 +25,7 @@ function run_analysis(options::Options)
         averageradialtemperatures[idx] = Vector{Union{Float64,Missing}}(undef, slices)
     end
 
-    maxes = Vector{Float64}(undef, framecount)
+    maxes = Vector{Float64}(undef, framecount) # TODO: Probably not needed. Test.
 
     averageradialtemperatures = SharedArray{Float64,2}((slices, framecount))
     interpmatrix = SharedArray{Float64,3}((options.interpolationpoints..., framecount))
