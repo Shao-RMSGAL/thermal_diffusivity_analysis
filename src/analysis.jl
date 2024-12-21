@@ -3,11 +3,14 @@
 Run analysis on thermal diffusivity data using provided options.
 """
 function run_analysis(options::Options)
+    @info "Running initial analysis with options" options
     slices = options.slices
     startframe = options.startframe
     endframe = options.endframe
 
     aux_data, framedata = parsevideo(options.filename, options.calibrationfilename)
+
+    @info "Parsing video data complete:" options.calibrationfilename
     startframe = (startframe == 0) ? 1 : startframe
     endframe = (endframe == 0) ? size(framedata, 1) : endframe
     framedata = framedata[startframe:endframe]

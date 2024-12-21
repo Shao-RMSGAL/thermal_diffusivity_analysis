@@ -18,6 +18,9 @@ struct Options
     animate::Bool # Only turn on if animating (will take longer)
     calibrationfilename::String # Location of calibration file
     minradius::Float64 # Minimum radius from the hotspot to start drawing radii (μm)
+    tempfluxthreshold::Float64 # Temperature fluctuation threshold used for determining maximum temperatures
+    laplacianthreshold::Float64 # Fluctuation threshold used to determine threshold for considering laplacian values 
+    timederivativethreshold::Float64 # Fluctuation values used to determine threshold for considering time derivative values
     @doc """
         Options(;
             writeoutput::Bool = false,
@@ -29,10 +32,13 @@ struct Options
             startframe::Int64 = 0,
             endframe::Int64 = 0,
             filename::String = "",
-            outputdirectory::String = "./output",
-            framerate::Float64 = 30.0,
+            outputdirectory::String = "abspath(output)",
+            framerate::Float64 = 10.0,
             animate::Bool = true,
-            calibrationfilename::String = "./calibration/calibration.csv",
+            calibrationfilename::String = abspath(joinpath("caliration", "calibration.csv")),
+            tempfluxthreshold::Float64 = 5.0,
+            laplacianthreshold::Float64 = 1.0,
+            timederivativethreshold::Float64 = 5.0,
         )
 
     Construct an Options struct.
@@ -49,11 +55,14 @@ struct Options
         startframe::Int64 = 0,
         endframe::Int64 = 0,
         filename::String = "",
-        outputdirectory::String = "./output",
-        framerate::Float64 = 30.0,
+        outputdirectory::String = abspath("output"),
+        framerate::Float64 = 10.0,
         animate::Bool = true,
-        calibrationfilename::String = "./calibration/calibration.csv",
+        calibrationfilename::String = abspath(joinpath("calibration", "calibration.csv")),
         minradius::Float64 = 1.0,
+        tempfluxthreshold::Float64 = 5.0,
+        laplacianthreshold::Float64 = 5.0e-6,
+        timederivativethreshold::Float64 = 1.0,
     ) = new(
         writeoutput,
         dographing,
@@ -69,5 +78,8 @@ struct Options
         animate,
         calibrationfilename,
         minradius,
+        tempfluxthreshold,
+        laplacianthreshold,
+        timederivativethreshold,
     )
 end

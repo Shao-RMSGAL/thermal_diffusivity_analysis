@@ -1,6 +1,7 @@
 module ThermalDiffusivityGUI
 
 using Distributed
+#  using CairoMakie
 using CSV: read, write
 using DataFrames: DataFrame
 using Gtk4, Gtk4.GLib

@@ -10,7 +10,7 @@ end
     locatedropoff(diffusivitydata::DataFrame)
 Determine the dropoff location.
 """
-function locatedropoff(diffusivitydata::DataFrame)
+function locatedropoff(diffusivitydata::DataFrame, options::Options)
     maxes = diffusivitydata[!, "Maximum Temperatures"]
     radialtempbyframe = diffusivitydata[!, "Average Radial Temperatures"]
     window = round_to_odd(11)
@@ -37,8 +37,8 @@ function locatedropoff(diffusivitydata::DataFrame)
     mintemp = 0
     maxtemp = 10
     frame = dropoffindex
-    thresholdtemp =
-        (maximum(radialtempbyframe[end]) - minimum(radialtempbyframe[end])) * 1.1
+    thresholdtemp = options.tempfluxthreshold
+        #  (maximum(radialtempbyframe[end]) - minimum(radialtempbyframe[end])) * 1.1
     while maxtemp - mintemp > thresholdtemp
         mintemp = minimum(radialtempbyframe[frame])
         maxtemp = maximum(radialtempbyframe[frame])
@@ -67,14 +67,14 @@ end
 Calculate thermal diffusivity using provided diffusivity data.
 """
 function diffusivitycalculation(diffusivitydata::DataFrame, options::Options)
-    @info "Starting diffusivity calculation..."
+    @info "Starting diffusivity calculation with options" options
     radiibyframe = diffusivitydata[!, "Radii"][1] # All identical. Take the first.
     radialtempbyframe = diffusivitydata[!, "Average Radial Temperatures"]
     framerate = options.framerate
     slices = options.slices
     radialincrement = Float64(radiibyframe.step)
 
-    dropoffindex, frames = locatedropoff(diffusivitydata)
+    dropoffindex, frames = locatedropoff(diffusivitydata, options)
     @info "Zone of interest from frame $dropoffindex-$frame, total $frames frames or $(frames/framerate) s"
     @info "Calculating time derivative over radius"
     dudtbyradius = SharedArray{Float64,2}((frames, slices))
@@ -120,7 +120,7 @@ function diffusivitycalculation(diffusivitydata::DataFrame, options::Options)
     try
         α =
             ifelse.(
-                (abs.(dudtbyradius') .> 1) .& (abs.(laplacian_over_time) .> 5e-6),
+                (abs.(dudtbyradius') .> options.timederivativethreshold) .& (abs.(laplacian_over_time) .> options.laplacianthreshold),
                 dudtbyradius' ./ laplacian_over_time,
                 missing,
             )
