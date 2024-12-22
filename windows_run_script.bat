@@ -27,6 +27,7 @@ where julia >nul 2>&1
 if %ERRORLEVEL% equ 0 (
     for /f "tokens=*" %%i in ('julia --version 2^>^&1') do set "FINAL_VERSION=%%i"
     call :log "Verification successful: !FINAL_VERSION!"
+    julia -q --project=. -e "using Pkg; Pkg.instantiate(); using ThermalDiffusivityGUI; ThermalDiffusivityGUI.julia_main()"
     exit /b 0
 ) else (
     call :log "Error: Julia installation verification failed"
