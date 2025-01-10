@@ -43,7 +43,10 @@ fi
 if command_exists julia; then
     FINAL_VERSION=$(julia --version)
     log_message "Verification successful: $FINAL_VERSION"
-    mkdir output
+    if ! [ -d ./output/ ]; then
+    	mkdir output
+
+    fi
     julia -q --project=. -e "using Pkg; Pkg.instantiate(); using ThermalDiffusivityGUI; ThermalDiffusivityGUI.julia_main()"
 else
     log_message "Error: Julia installation verification failed"
