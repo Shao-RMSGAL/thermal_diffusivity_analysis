@@ -1,3 +1,4 @@
+This command should work after initial setup (described below)
 julia --project=. -q -e "using ThermalDiffusivityGUI; ThermalDiffusivityGUI.julia_main();"
 
 To Actually run inside julia
