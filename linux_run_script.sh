@@ -52,3 +52,5 @@ else
     log_message "Error: Julia installation verification failed"
     exit 1
 fi
+
+# Nathaniel's Change
