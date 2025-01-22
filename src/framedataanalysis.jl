@@ -11,6 +11,7 @@ Extract the average temperature at different radial distances.
 """
 function extractradialtemp!(
     radialtemps::SubArray,
+    radialtempsstdev::SubArray,
     matrix::Matrix{Float64},
     center::Tuple{Int64,Int64},
     framesize::Tuple{Int64,Int64},
@@ -19,7 +20,7 @@ function extractradialtemp!(
     matrixsize = size(matrix)
     radialslices = options.radialslices
     radii =
-        range(options.minradius, framesize[argmin(framesize)] / 2, length = options.slices)
+        range(options.minradius, framesize[argmin(framesize)] / 2, length=options.slices)
     values = Vector{Union{Float64,Missing}}(undef, radialslices)
     θ = range(0, 2π, radialslices)
     ring = Vector{Tuple{Int64,Int64}}(undef, radialslices)
@@ -28,9 +29,9 @@ function extractradialtemp!(
         @inbounds for (i_t, t) in enumerate(θ)
             ring[i_t] =
                 center .+ round.(Int, (r * cos(t), r * sin(t)) .*
-                options.interpolationpoints ./ framesize)
+                                      options.interpolationpoints ./ framesize)
         end
-        radialtemps[i] = begin
+        (radialtemps[i], radialtempsstdev[i]) = begin
             for (i_r, coord) in enumerate(ring)
                 if 0 < coord[1] < matrixsize[1] && 0 < coord[2] < matrixsize[2]
                     values[i_r] = matrix[coord...]
@@ -38,7 +39,7 @@ function extractradialtemp!(
                     values[i_r] = missing
                 end
             end
-            mean(skipmissing(values))
+            (mean(skipmissing(values)), std(skipmissing(values)))
         end
     end
 end
