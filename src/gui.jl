@@ -44,14 +44,14 @@ function opendatafiles(win, programparameters, filelabel, dropdown)
             @info "handlechoice() called with " chosenfilenames
             if isempty(chosenfilenames)
                 @info "No data file chosen."
-                return nothing 
+                return nothing
             end
             programparameters.filenames = chosenfilenames
             filelabel.label = ""
             for filename ∈ chosenfilenames
-                    filelabel.label *= filename * "\n"
+                filelabel.label *= filename * "\n"
             end
-            dropdown.model =  GtkStringList(vcat(["Choose a file"],programparameters.filenames))
+            dropdown.model = GtkStringList(vcat(["Choose a file"], programparameters.filenames))
             if length(chosenfilenames) == 1
                 @info "Single file chosen. Automatically setting selected to " chosenfilenames[1]
                 dropdown.selected = 1
@@ -67,8 +67,8 @@ function opendatafiles(win, programparameters, filelabel, dropdown)
         "Pick file(s) to analyse",
         win,
         ["*.csv"];
-        start_folder = datadir,
-        multiple = true,
+        start_folder=datadir,
+        multiple=true,
     )
     nothing
 end
@@ -84,15 +84,15 @@ function chooseoutputdir(win, programparameters, outputlabel)
         mkdir("output")
     end
     outputdir = "output"
- 
+
     function handlechoice(chosenoutputdir)::Nothing
         @info "handlechoice() called with " chosenoutputdir
         if isempty(chosenoutputdir)
             @info "No output directory chosen. Output directory is " programparameters.outputdir
-            return nothing 
+            return nothing
         end
         programparameters.outputdir = chosenoutputdir
-        outputlabel.label =chosenoutputdir
+        outputlabel.label = chosenoutputdir
         nothing
     end
 
@@ -100,8 +100,8 @@ function chooseoutputdir(win, programparameters, outputlabel)
         handlechoice,
         "Save the output",
         win;
-        select_folder = true,
-        start_folder = outputdir,
+        select_folder=true,
+        start_folder=outputdir,
     )
     nothing
 end
@@ -113,10 +113,10 @@ Takes datafiles and an output directory, and conducts an analysis on them.
 """
 function generateanimation(programparameters)
     if programparameters.chosenfile == ""
-        info_dialog(()->nothing, "Please select files to analyze. Make sure to pick your file in the dropdown.", programparameters.window)
+        info_dialog(() -> nothing, "Please select files to analyze. Make sure to pick your file in the dropdown.", programparameters.window)
         error("No file chosen")
     elseif programparameters.outputdir == ""
-        info_dialog(()->nothing, "Please select an output directory.", programparameters.window)
+        info_dialog(() -> nothing, "Please select an output directory.", programparameters.window)
         error("No output directory chosen")
     end
     filename = programparameters.chosenfile
@@ -129,34 +129,36 @@ function generateanimation(programparameters)
 
     if programparameters.videooutputdropdown.selected == 2
         @info "Generating .gif"
-        gif(animation, joinpath(dirname, "flattening.gif"), fps = programparameters.options.framerate)
+        gif(animation, joinpath(dirname, "flattening.gif"), fps=programparameters.options.framerate)
     elseif programparameters.videooutputdropdown.selected == 1
         @info "Generating .mp4"
-        mp4(animation, joinpath(dirname, "flattening.mp4"), fps = programparameters.options.framerate)
+        mp4(animation, joinpath(dirname, "flattening.mp4"), fps=programparameters.options.framerate)
     else
         @info "No video output selected. Skipping video generation."
     end
     for item in eachrow(interestdata)
         frame = item.Frame
         df = DataFrame(
-        "Radius (μm)" => vcat([0], collect(item["Radii"])),
-        "Average Radial Temperature (°C)" =>
-        vcat(item["Maximum Temperatures"], item["Average Radial Temperatures"]),
-        "∇²T (K/μm²)" => vcat([0],item["∇²T"]),
-        "δT/δt (K/s)" => vcat([0], item["δT/δt"]),
-        "α (μm²/s)" => vcat([0], item["α"]),
+            "Radius (μm)" => vcat([0], collect(item["Radii"])),
+            "Average Radial Temperature (°C)" =>
+                vcat(item["Maximum Temperatures"], item["Average Radial Temperatures"]),
+            "Average Radial Temperature Standard Deviation (°C)" =>
+                vcat(item["Maximum Temperatures"], item["Average Radial Temperatures Standard Deviation"]),
+            "∇²T (K/μm²)" => vcat([0], item["∇²T"]),
+            "δT/δt (K/s)" => vcat([0], item["δT/δt"]),
+            "α (μm²/s)" => vcat([0], item["α"]),
         )
         if !isdir(joinpath(dirname, "data"))
             mkdir(joinpath(dirname, "data"))
         end
         write(joinpath(dirname, "data", "frame_$frame.csv"), df)
         write(
-        joinpath(dirname, "diffusivity.csv"),
-        DataFrame("Diffusivity (mm²/s)" => α[1], "Uncertainty (mm²/s)" => α[2]),
+            joinpath(dirname, "diffusivity.csv"),
+            DataFrame("Diffusivity (mm²/s)" => α[1], "Uncertainty (mm²/s)" => α[2]),
         )
     end
     @info "Saved analysis:" dirname
-    @async info_dialog(()->nothing, "Processing complete. Navigate to this directory\n $(joinpath(programparameters.outputdir, split(programparameters.chosenfile, ".")[1]))\n to see results.", programparameters.window)
+    @async info_dialog(() -> nothing, "Processing complete. Navigate to this directory\n $(joinpath(programparameters.outputdir, split(programparameters.chosenfile, ".")[1]))\n to see results.", programparameters.window)
     nothing
 end
 
@@ -172,56 +174,56 @@ function addfileactions(programparameters) # , config)
     graph = programparameters.graph
     dropdown = programparameters.dropdown
     rerunbutton = programparameters.rerunbutton
-    
+
     function updategraph()
         @async begin
             idx = dropdown.selected
             str = Gtk4.selected_string(dropdown)
             @info "Selected $idx which is $str"
             if idx != 0
-                    plotpath = joinpath(programparameters.outputdir, split(splitdir(str)[2], ".")[1], "max_plot.png") 
-                    programparameters.chosenfile = str
-                    outputdir = split(splitdir(plotpath)[1], ".")[1]
-                    if !isdir(outputdir)
-                        @info "Making directory at " outputdir
-                        mkdir(outputdir)
-                    end
-                    try
-                        @info "Parsing options..."
-                        programparameters.options = Options(;
-                            filename=programparameters.chosenfile, 
-                            scaledistance=parse(Float64, programparameters.distanceentry.text),
-                            tempfluxthreshold=parse(Float64, programparameters.tempentry.text),
-                            laplacianthreshold=parse(Float64, programparameters.laplacianentry.text)/1000^2,
-                            timederivativethreshold=parse(Float64, programparameters.timederivativeentry.text),
-                            startframe = parse(Int, programparameters.startframeentry.text),
-                            endframe = parse(Int, programparameters.endframeentry.text),
-                            framerate = parse(Float64, programparameters.fpsentry.text),
-                        )
-                    catch
-                        @warn "One or more entries are malformed"
-                        info_dialog(()->nothing, "One of your entries is maformed. Correct the error and try again.", programparameters.window)
-                        return nothing 
-                    end
-                    @info "Options parsed" programparameters.options
-                    startframe = programparameters.options.startframe
-                    programparameters.diffusivitydata = parsedata(programparameters)
-                    default(;size=(800,400))
-                    plot(startframe .+ programparameters.diffusivitydata[!, "Frame"], 
-                        programparameters.diffusivitydata[!, "Maximum Temperatures"], legend=false)
-                    title!("Plot of $(splitdir(str)[2]) Max Temps")
-                    xaxis!("Frame")
-                    yaxis!("Temperature (°C)")
-                    savefig(plotpath)
-                    @info "Saved new max plot at " plotpath
-                    Gtk4.G_.set_file(graph, Gtk4.GLib.GFile(plotpath))
-                    else
-                        programparameters.chosenfile = ""
-                        Gtk4.G_.set_file(graph, Gtk4.GLib.GFile(""))
-                    end
-                    nothing
+                plotpath = joinpath(programparameters.outputdir, split(splitdir(str)[2], ".")[1], "max_plot.png")
+                programparameters.chosenfile = str
+                outputdir = split(splitdir(plotpath)[1], ".")[1]
+                if !isdir(outputdir)
+                    @info "Making directory at " outputdir
+                    mkdir(outputdir)
+                end
+                try
+                    @info "Parsing options..."
+                    programparameters.options = Options(;
+                        filename=programparameters.chosenfile,
+                        scaledistance=parse(Float64, programparameters.distanceentry.text),
+                        tempfluxthreshold=parse(Float64, programparameters.tempentry.text),
+                        laplacianthreshold=parse(Float64, programparameters.laplacianentry.text) / 1000^2,
+                        timederivativethreshold=parse(Float64, programparameters.timederivativeentry.text),
+                        startframe=parse(Int, programparameters.startframeentry.text),
+                        endframe=parse(Int, programparameters.endframeentry.text),
+                        framerate=parse(Float64, programparameters.fpsentry.text),
+                    )
+                catch
+                    @warn "One or more entries are malformed"
+                    info_dialog(() -> nothing, "One of your entries is maformed. Correct the error and try again.", programparameters.window)
+                    return nothing
+                end
+                @info "Options parsed" programparameters.options
+                startframe = programparameters.options.startframe
+                programparameters.diffusivitydata = parsedata(programparameters)
+                default(; size=(800, 400))
+                plot(startframe .+ programparameters.diffusivitydata[!, "Frame"],
+                    programparameters.diffusivitydata[!, "Maximum Temperatures"], legend=false)
+                title!("Plot of $(splitdir(str)[2]) Max Temps")
+                xaxis!("Frame")
+                yaxis!("Temperature (°C)")
+                savefig(plotpath)
+                @info "Saved new max plot at " plotpath
+                Gtk4.G_.set_file(graph, Gtk4.GLib.GFile(plotpath))
+            else
+                programparameters.chosenfile = ""
+                Gtk4.G_.set_file(graph, Gtk4.GLib.GFile(""))
             end
             nothing
+        end
+        nothing
     end
     function choosedatafilecallback(_, _)::Nothing
         @info "choosedatafilecallback() called"
@@ -335,25 +337,25 @@ function main()
 
     options = Options()
 
-    choosedatafilebutton = GtkButton("Choose Data File(s)"; action_name = "win.choosedatafiles")
-    chooseoutputdirbutton = GtkButton("Choose Output Folder"; action_name = "win.chooseoutputdir") 
-    analyzebutton = GtkButton("Run Analysis"; action_name = "win.runanalysis")
-    rerunbutton = GtkButton("Rerun plot generation") 
-    
+    choosedatafilebutton = GtkButton("Choose Data File(s)"; action_name="win.choosedatafiles")
+    chooseoutputdirbutton = GtkButton("Choose Output Folder"; action_name="win.chooseoutputdir")
+    analyzebutton = GtkButton("Run Analysis"; action_name="win.runanalysis")
+    rerunbutton = GtkButton("Rerun plot generation")
+
     labelsandentries = [
-    (choosedatafilebutton, chooseoutputdirbutton),
-    (GtkLabel("Chosen Files: "),GtkLabel("No files chosen")),
-    (GtkLabel("Output Directory: "),GtkLabel(abspath("output"))),
-    (GtkLabel("Distance per pixel (μm)"),GtkEntry(; text = options.scaledistance)),
-    (GtkLabel("Temperature fluctuation threshold (°C)"),GtkEntry(; text = options.tempfluxthreshold)),
-    (GtkLabel("|∇²T| minimum threshold (K/mm²)"),GtkEntry(; text = options.laplacianthreshold*1000^2)),
-    (GtkLabel("|δT/δt| minimum threshold (K/s)"),GtkEntry(; text = options.timederivativethreshold)),
-    (GtkLabel("Start Frame"),GtkEntry(;text = options.startframe)),
-    (GtkLabel("End Frame"),GtkEntry(; text = options.endframe)),
-    (GtkLabel("Current File"), GtkDropDown(["No file selected"])),
-    (analyzebutton, rerunbutton),
-    (GtkLabel("Output FPS"), GtkEntry(;text = options.framerate)),
-    (GtkLabel("Video output type"), GtkDropDown(["No Output", ".mp4", ".gif"]; selected = 2)),
+        (choosedatafilebutton, chooseoutputdirbutton),
+        (GtkLabel("Chosen Files: "), GtkLabel("No files chosen")),
+        (GtkLabel("Output Directory: "), GtkLabel(abspath("output"))),
+        (GtkLabel("Distance per pixel (μm)"), GtkEntry(; text=options.scaledistance)),
+        (GtkLabel("Temperature fluctuation threshold (°C)"), GtkEntry(; text=options.tempfluxthreshold)),
+        (GtkLabel("|∇²T| minimum threshold (K/mm²)"), GtkEntry(; text=options.laplacianthreshold * 1000^2)),
+        (GtkLabel("|δT/δt| minimum threshold (K/s)"), GtkEntry(; text=options.timederivativethreshold)),
+        (GtkLabel("Start Frame"), GtkEntry(; text=options.startframe)),
+        (GtkLabel("End Frame"), GtkEntry(; text=options.endframe)),
+        (GtkLabel("Current File"), GtkDropDown(["No file selected"])),
+        (analyzebutton, rerunbutton),
+        (GtkLabel("Output FPS"), GtkEntry(; text=options.framerate)),
+        (GtkLabel("Video output type"), GtkDropDown(["No Output", ".mp4", ".gif"]; selected=2)),
     ]
     createtooltips(labelsandentries)
 
@@ -365,7 +367,7 @@ function main()
         DataFrame(),
         "",
         options,
-        win, 
+        win,
         labelsandentries[2][2],
         labelsandentries[3][2],
         labelsandentries[4][2],
@@ -373,18 +375,18 @@ function main()
         labelsandentries[6][2],
         labelsandentries[7][2],
         labelsandentries[8][2],
-        labelsandentries[9][2], 
+        labelsandentries[9][2],
         labelsandentries[10][2],
         labelsandentries[11][2],
         labelsandentries[12][2],
         labelsandentries[13][2],
         graph,
-        ) 
+    )
 
     outervbox = GtkBox(:v; vexpand=true, hexpand=true)
     labelgrid = GtkGrid()
-    
-    for (idx,pair) in enumerate(labelsandentries)
+
+    for (idx, pair) in enumerate(labelsandentries)
         labelgrid[1, idx] = pair[1]
         labelgrid[2, idx] = pair[2]
     end
@@ -392,8 +394,8 @@ function main()
     push!(outervbox, toplabel)
     push!(outervbox, labelgrid)
 
-    top_paned = GtkPaned(:h; hexpand = true, position = 1000)
-    top_paned[1] =  outervbox
+    top_paned = GtkPaned(:h; hexpand=true, position=1000)
+    top_paned[1] = outervbox
 
     graphbox = GtkBox(:h; hexpand=true)
     push!(graphbox, graph)
