@@ -136,6 +136,14 @@ function generateanimation(programparameters)
     else
         @info "No video output selected. Skipping video generation."
     end
+
+    # Generate maxes in a separate file
+    write(
+        joinpath(dirname, "maxes_over_time.csv"),
+        DataFrame("Frame" => programparameters.diffusivitydata[!, "Frame"], "Maximum Temperature" => programparameters.diffusivitydata[!, "Maximum Temperatures"]),
+    )
+
+
     for item in eachrow(interestdata)
         frame = item.Frame
         df = DataFrame(
@@ -143,7 +151,7 @@ function generateanimation(programparameters)
             "Average Radial Temperature (°C)" =>
                 vcat(item["Maximum Temperatures"], item["Average Radial Temperatures"]),
             "Average Radial Temperature Standard Deviation (°C)" =>
-                vcat(item["Maximum Temperatures"], item["Average Radial Temperatures Standard Deviation"]),
+                vcat([0], item["Average Radial Temperatures Standard Deviation"]),
             "∇²T (K/μm²)" => vcat([0], item["∇²T"]),
             "δT/δt (K/s)" => vcat([0], item["δT/δt"]),
             "α (μm²/s)" => vcat([0], item["α"]),
@@ -152,11 +160,12 @@ function generateanimation(programparameters)
             mkdir(joinpath(dirname, "data"))
         end
         write(joinpath(dirname, "data", "frame_$frame.csv"), df)
-        write(
-            joinpath(dirname, "diffusivity.csv"),
-            DataFrame("Diffusivity (mm²/s)" => α[1], "Uncertainty (mm²/s)" => α[2]),
-        )
     end
+
+    write(
+        joinpath(dirname, "diffusivity.csv"),
+        DataFrame("Diffusivity (mm²/s)" => α[1], "Uncertainty (mm²/s)" => α[2]),
+    )
     @info "Saved analysis:" dirname
     @async info_dialog(() -> nothing, "Processing complete. Navigate to this directory\n $(joinpath(programparameters.outputdir, split(programparameters.chosenfile, ".")[1]))\n to see results.", programparameters.window)
     nothing
