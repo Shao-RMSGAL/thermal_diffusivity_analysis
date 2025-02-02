@@ -28,6 +28,7 @@ function run_analysis(options::Options)
     maxes = Vector{Float64}(undef, framecount) # TODO: Probably not needed. Test.
 
     averageradialtemperatures = SharedArray{Float64,2}((slices, framecount))
+    averageradialtemperaturesstdev = SharedArray{Float64,2}((slices, framecount))
     interpmatrix = SharedArray{Float64,3}((options.interpolationpoints..., framecount))
     maxes = SharedArray{Float64,1}(framecount)
 
@@ -98,6 +99,10 @@ function run_analysis(options::Options)
         "Average Radial Temperatures" => [
             view(averageradialtemperatures, :, i) for
             i = 1:size(averageradialtemperatures, 2)
+        ],
+        "Average Radial Temperatures Standard Deviation" => [
+            view(averageradialtemperaturesstdev, :, i) for
+            i = 1:size(averageradialtemperaturesstdev, 2)
         ],
         "Maximum Temperatures" => maxes,
         "Interpolated Temperature Matrix" =>
