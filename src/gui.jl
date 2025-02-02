@@ -150,8 +150,6 @@ function generateanimation(programparameters)
             "Radius (μm)" => vcat([0], collect(item["Radii"])),
             "Average Radial Temperature (°C)" =>
                 vcat(item["Maximum Temperatures"], item["Average Radial Temperatures"]),
-            "Average Radial Temperature Standard Deviation (°C)" =>
-                vcat([0], item["Average Radial Temperatures Standard Deviation"]),
             "∇²T (K/μm²)" => vcat([0], item["∇²T"]),
             "δT/δt (K/s)" => vcat([0], item["δT/δt"]),
             "α (μm²/s)" => vcat([0], item["α"]),
@@ -160,8 +158,6 @@ function generateanimation(programparameters)
             mkdir(joinpath(dirname, "data"))
         end
         write(joinpath(dirname, "data", "frame_$frame.csv"), df)
-    end
-
     write(
         joinpath(dirname, "diffusivity.csv"),
         DataFrame("Diffusivity (mm²/s)" => α[1], "Uncertainty (mm²/s)" => α[2]),
@@ -208,6 +204,8 @@ function addfileactions(programparameters) # , config)
                         startframe=parse(Int, programparameters.startframeentry.text),
                         endframe=parse(Int, programparameters.endframeentry.text),
                         framerate=parse(Float64, programparameters.fpsentry.text),
+                        hotspottrackingenabled=!(programparameters.hotspotcheckbox.active)
+
                     )
                 catch
                     @warn "One or more entries are malformed"
@@ -292,6 +290,7 @@ mutable struct parameters
     fpsentry::GtkEntry
     videooutputdropdown::GtkDropDown
     graph::GtkPicture
+    hotspotcheckbox::GtkCheckButtonLeaf
 end
 
 """
@@ -329,6 +328,8 @@ function createtooltips(labelsandentries)
     set_gtk_property!(labelsandentries[12][2], "tooltip-text", "Control the frames per second of the output animation.")
     set_gtk_property!(labelsandentries[13][2], "has-tooltip", true)
     set_gtk_property!(labelsandentries[13][2], "tooltip-text", "Select the type of output for the animation. If none is selected, no video is produced. (Not producing a video can save time if it is not needed)")
+    set_gtk_property!(labelsandentries[14][2], "has-tooltip", true)
+    set_gtk_property!(labelsandentries[14][2], "tooltip-text", "Control whether hotspot tracking is enabled for circular ring drawing. If not, the program sets the central hotspot at the coordinate of the all-time hottest point.")
 end
 
 """
@@ -336,8 +337,10 @@ end
 Complete analysis with userprompt.
 """
 function main()
+
     GLib.start_main_loop()
     win = GtkWindow("ThermalDiffusivityGUI", 1600, 900)
+
     toplabel = GtkLabel("Thermal Diffusivity")
 
     if !isdir("output")
@@ -365,6 +368,7 @@ function main()
         (analyzebutton, rerunbutton),
         (GtkLabel("Output FPS"), GtkEntry(; text=options.framerate)),
         (GtkLabel("Video output type"), GtkDropDown(["No Output", ".mp4", ".gif"]; selected=2)),
+        (GtkLabel("Disable dynamic hotspot tracking"), GtkCheckButton()),
     ]
     createtooltips(labelsandentries)
 
@@ -390,6 +394,7 @@ function main()
         labelsandentries[12][2],
         labelsandentries[13][2],
         graph,
+        labelsandentries[14][2],
     )
 
     outervbox = GtkBox(:v; vexpand=true, hexpand=true)

@@ -17,6 +17,10 @@ function extractradialtemp!(
     framesize::Tuple{Int64,Int64},
     options::Options,
 )
+
+    #  if !options.hotspottrackingenabled
+    #  end
+
     matrixsize = size(matrix)
     radialslices = options.radialslices
     radii =

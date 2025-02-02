@@ -6,7 +6,7 @@ Extract auxillary data from filedata, such as distance or emissivity.
 function extractauxdata!(auxdata::OrderedDict{String,Any}, filedata::Vector{String})
     @debug "Parsing auxillary data from:" filedata
     for i = 1:14
-        parts = split(filedata[i], ',', limit = 3)
+        parts = split(filedata[i], ',', limit=3)
         if length(parts) == 3
             key = strip(parts[2], ':')
             value = strip(parts[3])
@@ -49,7 +49,7 @@ function extractframedata!(framedata::Vector{Matrix{Float64}}, filedata::Vector{
         elseif !isempty(strip(line))
             splitline = split(line, ',')
             if splitline[end] == ""
-                parsed_line = parse.(Float64, splitline[2:(end - 1)])
+                parsed_line = parse.(Float64, splitline[2:(end-1)])
                 push!(currentframe, parsed_line)
             else
                 parsed_line = parse.(Float64, splitline[2:end])
@@ -76,7 +76,7 @@ This assumes that both columns in the calibration data is in °C.
 function applycalibration!(framedata::Vector{Matrix{Float64}}, calibrationfilename::String)
     @debug "Applying calibration using \"$calibrationfilename\" to" framedata
     df = read(calibrationfilename, DataFrame)
-    calib = linear_interpolation(df.IR, df.T, extrapolation_bc = Line())
+    calib = linear_interpolation(df.IR, df.T, extrapolation_bc=Line())
 
     for i = 1:size(framedata, 1)
         framedata[i] = calib.(framedata[i])
@@ -104,7 +104,7 @@ function parsevideo(
     datafilename::String,
     calibrationfilename::String,
 )::Tuple{OrderedDict{String,Any},Vector{Matrix{Float64}}}
-    @debug "Parsing video using \"$calibrationfilename\" for file \"$datafilename\"." 
+    @debug "Parsing video using \"$calibrationfilename\" for file \"$datafilename\"."
     auxdata = OrderedDict{String,Any}()
     framedata = Vector{Matrix{Float64}}()
 

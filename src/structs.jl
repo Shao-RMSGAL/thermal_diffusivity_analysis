@@ -21,6 +21,7 @@ struct Options
     tempfluxthreshold::Float64 # Temperature fluctuation threshold used for determining maximum temperatures
     laplacianthreshold::Float64 # Fluctuation threshold used to determine threshold for considering laplacian values 
     timederivativethreshold::Float64 # Fluctuation values used to determine threshold for considering time derivative values
+    hotspottrackingenabled::Bool # Determine whether to enable hotspot tracking during dropoffs.
     @doc """
         Options(;
             writeoutput::Bool = false,
@@ -39,6 +40,7 @@ struct Options
             tempfluxthreshold::Float64 = 5.0,
             laplacianthreshold::Float64 = 1.0,
             timederivativethreshold::Float64 = 5.0,
+            hotspottracking::Bool = true,
         )
 
     Construct an Options struct.
@@ -46,23 +48,24 @@ struct Options
     All fields have default options that can be modified using keyword arguments.
     """
     Options(;
-        writeoutput::Bool = false,
-        dographing::Bool = false,
-        radialslices::Int64 = 100,
-        slices::Int64 = 100,
-        scaledistance::Float64 = 250.0,
-        interpolationpoints::Tuple{Int64,Int64} = (100, 100),
-        startframe::Int64 = 0,
-        endframe::Int64 = 0,
-        filename::String = "",
-        outputdirectory::String = abspath("output"),
-        framerate::Float64 = 10.0,
-        animate::Bool = true,
-        calibrationfilename::String = abspath(joinpath("calibration", "calibration.csv")),
-        minradius::Float64 = 1.0,
-        tempfluxthreshold::Float64 = 5.0,
-        laplacianthreshold::Float64 = 5.0e-6,
-        timederivativethreshold::Float64 = 1.0,
+        writeoutput::Bool=false,
+        dographing::Bool=false,
+        radialslices::Int64=100,
+        slices::Int64=100,
+        scaledistance::Float64=250.0,
+        interpolationpoints::Tuple{Int64,Int64}=(100, 100),
+        startframe::Int64=0,
+        endframe::Int64=0,
+        filename::String="",
+        outputdirectory::String=abspath("output"),
+        framerate::Float64=10.0,
+        animate::Bool=true,
+        calibrationfilename::String=abspath(joinpath("calibration", "calibration.csv")),
+        minradius::Float64=1.0,
+        tempfluxthreshold::Float64=5.0,
+        laplacianthreshold::Float64=5.0e-6,
+        timederivativethreshold::Float64=1.0,
+        hotspottrackingenabled::Bool=true,
     ) = new(
         writeoutput,
         dographing,
@@ -81,5 +84,6 @@ struct Options
         tempfluxthreshold,
         laplacianthreshold,
         timederivativethreshold,
+        hotspottrackingenabled,
     )
 end
