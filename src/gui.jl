@@ -143,13 +143,14 @@ function generateanimation(programparameters)
         DataFrame("Frame" => programparameters.diffusivitydata[!, "Frame"], "Maximum Temperature" => programparameters.diffusivitydata[!, "Maximum Temperatures"]),
     )
 
-
     for item in eachrow(interestdata)
         frame = item.Frame
         df = DataFrame(
             "Radius (μm)" => vcat([0], collect(item["Radii"])),
             "Average Radial Temperature (°C)" =>
                 vcat(item["Maximum Temperatures"], item["Average Radial Temperatures"]),
+            "Average Radial Temperature Standard Deviation (°C)" =>
+                vcat([0], item["Average Radial Temperatures Standard Deviation"]),
             "∇²T (K/μm²)" => vcat([0], item["∇²T"]),
             "δT/δt (K/s)" => vcat([0], item["δT/δt"]),
             "α (μm²/s)" => vcat([0], item["α"]),
@@ -158,6 +159,7 @@ function generateanimation(programparameters)
             mkdir(joinpath(dirname, "data"))
         end
         write(joinpath(dirname, "data", "frame_$frame.csv"), df)
+    end
     write(
         joinpath(dirname, "diffusivity.csv"),
         DataFrame("Diffusivity (mm²/s)" => α[1], "Uncertainty (mm²/s)" => α[2]),
@@ -204,9 +206,7 @@ function addfileactions(programparameters) # , config)
                         startframe=parse(Int, programparameters.startframeentry.text),
                         endframe=parse(Int, programparameters.endframeentry.text),
                         framerate=parse(Float64, programparameters.fpsentry.text),
-                        hotspottrackingenabled=!(programparameters.hotspotcheckbox.active)
-
-                    )
+                        hotspottrackingenabled=!(programparameters.hotspotcheckbox.active))
                 catch
                     @warn "One or more entries are malformed"
                     info_dialog(() -> nothing, "One of your entries is maformed. Correct the error and try again.", programparameters.window)

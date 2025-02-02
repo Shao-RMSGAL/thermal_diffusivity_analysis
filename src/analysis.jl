@@ -52,6 +52,7 @@ function run_analysis(options::Options)
             push!(centers, center)
             extractradialtemp!(
                 view(averageradialtemperatures, :, i),
+                view(averageradialtemperaturesstdev, :, i),
                 interpmatrix[:, :, i],
                 convert(Tuple{Int64,Int64}, center),
                 framesize,
@@ -84,6 +85,7 @@ function run_analysis(options::Options)
         @sync @distributed for i = 1:framecount
             extractradialtemp!(
                 view(averageradialtemperatures, :, i),
+                view(averageradialtemperaturesstdev, :, i),
                 interpmatrix[:, :, i],
                 convert(Tuple{Int64,Int64}, center),
                 framesize,
