@@ -16,10 +16,14 @@ function extractradialtemp!(
     framesize::Tuple{Int64,Int64},
     options::Options,
 )
+
+    #  if !options.hotspottrackingenabled
+    #  end
+
     matrixsize = size(matrix)
     radialslices = options.radialslices
     radii =
-        range(options.minradius, framesize[argmin(framesize)] / 2, length = options.slices)
+        range(options.minradius, framesize[argmin(framesize)] / 2, length=options.slices)
     values = Vector{Union{Float64,Missing}}(undef, radialslices)
     θ = range(0, 2π, radialslices)
     ring = Vector{Tuple{Int64,Int64}}(undef, radialslices)
@@ -28,7 +32,7 @@ function extractradialtemp!(
         @inbounds for (i_t, t) in enumerate(θ)
             ring[i_t] =
                 center .+ round.(Int, (r * cos(t), r * sin(t)) .*
-                options.interpolationpoints ./ framesize)
+                                      options.interpolationpoints ./ framesize)
         end
         radialtemps[i] = begin
             for (i_r, coord) in enumerate(ring)

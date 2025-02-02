@@ -35,23 +35,60 @@ function run_analysis(options::Options)
         range(
             options.minradius,
             framesize[argmin(framesize)] / 2,
-            length = options.slices,
+            length=options.slices,
         ) * options.scaledistance
 
-    @sync @distributed for i = 1:framecount
-        interpolatedata!(
-            view(interpmatrix, :, :, i),
-            framedata[i],
-            options.interpolationpoints,
-        )
-        maxes[i], center = findmax(interpmatrix[:, :, i])
-        extractradialtemp!(
-            view(averageradialtemperatures, :, i),
-            interpmatrix[:, :, i],
-            convert(Tuple{Int64,Int64}, center),
-            framesize,
-            options,
-        )
+    centers = Vector{CartesianIndex}() # For storing the center hotspot
+    if options.hotspottrackingenabled
+        @info "Running with hotspot tracking"
+        @sync @distributed for i = 1:framecount
+            interpolatedata!(
+                view(interpmatrix, :, :, i),
+                framedata[i],
+                options.interpolationpoints,
+            )
+            maxes[i], center = findmax(interpmatrix[:, :, i])
+            push!(centers, center)
+            extractradialtemp!(
+                view(averageradialtemperatures, :, i),
+                interpmatrix[:, :, i],
+                convert(Tuple{Int64,Int64}, center),
+                framesize,
+                options,
+            )
+        end
+    else # Disable hotspot tracking (HACK)
+        @info "Running without hotspot tracking"
+        for i = 1:framecount
+            interpolatedata!(
+                view(interpmatrix, :, :, i),
+                framedata[i],
+                options.interpolationpoints,
+            )
+            try
+                maxes[i], center = findmax(interpmatrix[:, :, i])
+                push!(centers, center)
+            catch e
+                @warn e
+            end
+        end
+
+
+        center = centers[findfirst(x -> x == maximum(maxes), maxes)]
+        for i in 1:length(centers) # Hack to ensure all recorded center data is the same
+            centers[i] = center
+        end
+        @info "Fixed center at " center
+
+        @sync @distributed for i = 1:framecount
+            extractradialtemp!(
+                view(averageradialtemperatures, :, i),
+                interpmatrix[:, :, i],
+                convert(Tuple{Int64,Int64}, center),
+                framesize,
+                options,
+            )
+        end
     end
 
     @info "Analysis Complete"
@@ -67,5 +104,6 @@ function run_analysis(options::Options)
             [view(interpmatrix, :, :, i) for i = 1:size(interpmatrix, 3)],
         "Frame size" => size.(framedata),
         "Radii" => fill(radii, framecount),
+        "Centers" => centers,
     )
 end

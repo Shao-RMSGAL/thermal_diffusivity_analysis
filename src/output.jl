@@ -21,7 +21,7 @@ Create an animated plot of the radial temperature distribution
 alongside the surface plot.
 """
 function plotdropoff_flattening(totaldata::DataFrame, data::DataFrame, options::Options)
-    #  pythonplot();
+    @warn data[!, "Centers"]
     gr()
     @info "Starting dropoff plotting"
     radii = data[!, "Radii"]
@@ -39,113 +39,125 @@ function plotdropoff_flattening(totaldata::DataFrame, data::DataFrame, options::
     ylimitstimederiv =
         (minimum(minimum.(timederivative_over_radius)), maximum(maximum.(timederivative_over_radius)))
     framesize = (data[1, "Frame size"])
-    frameofdropoff = findfirst(isequal(data[1,"Frame"]), totaldata[!,"Frame"])
+    frameofdropoff = findfirst(isequal(data[1, "Frame"]), totaldata[!, "Frame"])
     xgrid = collect(
         range(
             0,
             framesize[1] - 1,
-            length = options.interpolationpoints[1],
+            length=options.interpolationpoints[1],
         ) * options.scaledistance,
     )
     ygrid = collect(
         range(
             0,
             framesize[2] - 1,
-            length = options.interpolationpoints[2],
+            length=options.interpolationpoints[2],
         ) * options.scaledistance,
     )
 
     window = round_to_odd(11)
     params = 5
     @info "Filtering settings" window params
-    filtered = savitzky_golay(allmaxes, window, params, deriv = 0).y
-      
+    filtered = savitzky_golay(allmaxes, window, params, deriv=0).y
+
     anim = @animate for i ∈ 1:framecount
-        l = @layout [a b{.6w, 1.0h}; c{0.3h}]
+        l = @layout [a b{0.6w,1.0h}; c{0.3h}]
 
         scatterplot = scatter(
             radii[i],
             radialtempbyframe[i],
-            xformatter=_->"",
-            ylim = ylimitsdata,
-            ylabel = "T (°C)",
-            legend = false,
+            xformatter=_ -> "",
+            ylim=ylimitsdata,
+            ylabel="T (°C)",
+            legend=false,
         )
         laplacian = laplacian_over_radius[i]
         timederivative = timederivative_over_radius[i]
         laplaceplot = plot(
             collect(radii[i]),
             laplacian * 1.0e6,
-            xlabel = "Radial distance (μm)",
-            ylabel = "∇²T (K/mm²)",
-            legend = false,
-            ylim = ylimitslaplacian .* 1.0e6,
+            xlabel="Radial distance (μm)",
+            ylabel="∇²T (K/mm²)",
+            legend=false,
+            ylim=ylimitslaplacian .* 1.0e6,
         )
         timederivplot = plot(
             collect(radii[i]),
             timederivative,
-            xformatter=_->"",
-            ylabel = "δT/δt (K/s)",
-            legend = false,
-            ylim = ylimitstimederiv,
+            xformatter=_ -> "",
+            ylabel="δT/δt (K/s)",
+            legend=false,
+            ylim=ylimitstimederiv,
         )
         surf = surface(
             xgrid,
             ygrid,
             tempmatrixovertime[i],
-            xlabel = "x-position (μm)",
-            ylabel = "y-position (μm)",
-            zlabel = "Temperature (K)",
-            xtickfontsize = 8,
-            ytickfontsize = 8,
-            ztickfontsize = 8,
-            ctickfontsize = 8,
-            xguidefontsize = 8,
-            yguidefontsize = 8,
-            zguidefontsize = 8,
-            zlims = ylimitssurface,
-            clims = ylimitssurface,
-            size = (1920, 1080, ),
-            margin = 0mm,
+            xlabel="x-position (μm)",
+            ylabel="y-position (μm)",
+            zlabel="Temperature (K)",
+            xtickfontsize=8,
+            ytickfontsize=8,
+            ztickfontsize=8,
+            ctickfontsize=8,
+            xguidefontsize=8,
+            yguidefontsize=8,
+            zguidefontsize=8,
+            zlims=ylimitssurface,
+            clims=ylimitssurface,
+            size=(1920, 1080,),
+            margin=0mm,
+        )
+        x_coord = data[!, "Centers"][i][1] / options.interpolationpoints[1] * options.scaledistance * data[!, "Frame size"][1][1]
+        y_coord = data[!, "Centers"][i][2] / options.interpolationpoints[2] * options.scaledistance * data[!, "Frame size"][1][2]
+        #  @info x_coord
+        plot!(
+            [x_coord, x_coord], # Hack for centerpoint visualization
+            [y_coord, y_coord],
+            [tempmatrixovertime[i][data[!, "Centers"][i]], tempmatrixovertime[i][data[!, "Centers"][i]] - 1.0],
+            #  data[!, "Maximum Temperatures"][i] + 10],
+            linewidth=5,
+            #  label="Central hotspot"
+            legend=false
         )
         radialtempplot = plot(
             scatterplot,
             timederivplot,
-            laplaceplot, 
-            layout = grid(3,1),
+            laplaceplot,
+            layout=grid(3, 1),
         )
         fullrange = plot(
-            allmaxes, 
+            allmaxes,
             xlabel="Frame",
             ylabel="Maximum Temperature (°C)",
-            label = "Data",
-            legend = :topright,
+            label="Data",
+            legend=:topright,
         )
         plot!(
             filtered,
-            label = "Smoothed",
+            label="Smoothed",
         )
         vline!(
             fullrange,
             [frameofdropoff],
             style=:dash,
-            label = "Dropoff frame $frameofdropoff"
+            label="Dropoff frame $frameofdropoff"
         )
         vline!(
             fullrange,
             [frameofdropoff + i],
             style=:dash,
-            label = "Current frame $(frameofdropoff + i)"
+            label="Current frame $(frameofdropoff + i)"
         )
         plot(
             radialtempplot,
             surf,
             fullrange,
-            size = (1920, 1080),
-            left_margin = [12mm 12mm],
-            bottom_margin = [12mm 12mm],
-        suptitle = "$(splitdir(options.filename)[end])\nAnimation of temperature over time (frame $(data[i, "Frame"]))",
-            layout = l,
+            size=(1920, 1080),
+            left_margin=[12mm 12mm],
+            bottom_margin=[12mm 12mm],
+            suptitle="$(splitdir(options.filename)[end])\nAnimation of temperature over time (frame $(data[i, "Frame"]))",
+            layout=l,
         )
     end
     @info "Dropoff plotting complete"

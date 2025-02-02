@@ -15,16 +15,16 @@ function locatedropoff(diffusivitydata::DataFrame, options::Options)
     radialtempbyframe = diffusivitydata[!, "Average Radial Temperatures"]
     window = round_to_odd(11)
     params = 5
-    filtered_1d = savitzky_golay(maxes, window, 2, deriv = 1).y
-    filtered = savitzky_golay(maxes, window, params, deriv = 0).y
+    filtered_1d = savitzky_golay(maxes, window, 2, deriv=1).y
+    filtered = savitzky_golay(maxes, window, params, deriv=0).y
 
     dropoffindex = argmin(filtered_1d)
 
     currenttemp = maxes[dropoffindex]
-    prevtemp = maxes[dropoffindex - 1]
+    prevtemp = maxes[dropoffindex-1]
     while currenttemp < prevtemp
         currenttemp = filtered[dropoffindex]
-        prevtemp = filtered[dropoffindex - 1]
+        prevtemp = filtered[dropoffindex-1]
         dropoffindex -= 1
         if dropoffindex == 1
             @warn "Dropoff lookback terminated at beginning frame. Check dataset."
@@ -38,7 +38,7 @@ function locatedropoff(diffusivitydata::DataFrame, options::Options)
     maxtemp = 10
     frame = dropoffindex
     thresholdtemp = options.tempfluxthreshold
-        #  (maximum(radialtempbyframe[end]) - minimum(radialtempbyframe[end])) * 1.1
+    #  (maximum(radialtempbyframe[end]) - minimum(radialtempbyframe[end])) * 1.1
     while maxtemp - mintemp > thresholdtemp
         mintemp = minimum(radialtempbyframe[frame])
         maxtemp = maximum(radialtempbyframe[frame])
@@ -50,7 +50,7 @@ function locatedropoff(diffusivitydata::DataFrame, options::Options)
         end
     end
     frames = frame - dropoffindex
-    
+
     if frames < 2
         frames = 10
         @warn "No dropoff detected. Check data."
@@ -79,13 +79,13 @@ function diffusivitycalculation(diffusivitydata::DataFrame, options::Options)
     @info "Calculating time derivative over radius"
     dudtbyradius = SharedArray{Float64,2}((frames, slices))
     tempvstime_over_radius =
-        [[radialtempbyframe[i + dropoffindex][j] for i = 1:frames] for j = 1:slices]
+        [[radialtempbyframe[i+dropoffindex][j] for i = 1:frames] for j = 1:slices]
     params = round_to_odd(frames)
     for i = 1:slices
         while true
             try
                 dudtbyradius[:, i] .=
-                    savitzky_golay(tempvstime_over_radius[i], params, 2, deriv = 1).y *
+                    savitzky_golay(tempvstime_over_radius[i], params, 2, deriv=1).y *
                     framerate
                 break
             catch e
@@ -102,10 +102,10 @@ function diffusivitycalculation(diffusivitydata::DataFrame, options::Options)
         frameidx = i + dropoffindex
         params = round_to_odd(slices / 2)
         firstderiv =
-            savitzky_golay(radialtempbyframe[frameidx], params, 2, deriv = 1).y ./
+            savitzky_golay(radialtempbyframe[frameidx], params, 2, deriv=1).y ./
             (radialincrement)
         secondderiv =
-            savitzky_golay(radialtempbyframe[frameidx], params, 3, deriv = 2).y ./
+            savitzky_golay(radialtempbyframe[frameidx], params, 3, deriv=2).y ./
             (radialincrement)^2
         @debug sizeof(firstderriv)
         @debug sizeof(secondderriv)
@@ -116,7 +116,7 @@ function diffusivitycalculation(diffusivitydata::DataFrame, options::Options)
     @info "Calculating thermal diffusivity"
     @info size(dudtbyradius) size(laplacian_over_time)
     α = []
-    ᾱ,σα = (0,0)
+    ᾱ, σα = (0, 0)
     try
         α =
             ifelse.(
@@ -124,19 +124,19 @@ function diffusivitycalculation(diffusivitydata::DataFrame, options::Options)
                 dudtbyradius' ./ laplacian_over_time,
                 missing,
             )
-         ᾱ = mean(skipmissing(α)) / 1000^2
+        ᾱ = mean(skipmissing(α)) / 1000^2
         σα = std(skipmissing(α)) / 1000^2
-    @info "Thermal diffusivity calculated.
-Value: $ᾱ mm²/s
-Standard Deviation: $σα mm²/s"
+        @info "Thermal diffusivity calculated.
+    Value: $ᾱ mm²/s
+    Standard Deviation: $σα mm²/s"
     catch
         ᾱ = 0
         σα = 0
         @warn "Could not calculate diffusivity. Beware of results. Consider adjusting thresholds on time derivative and Laplacian."
     end
-    result = DataFrame(diffusivitydata[dropoffindex:(dropoffindex + frames - 1), :])
+    result = DataFrame(diffusivitydata[dropoffindex:(dropoffindex+frames-1), :])
     result[!, "∇²T"] = [view(laplacian_over_time, :, i) for i = 1:frames]
     result[!, "δT/δt"] = [view(dudtbyradius', :, i) for i = 1:frames]
     result[!, "α"] = [view(α, :, i) for i = 1:frames]
-     return result, (ᾱ, σα)
+    return result, (ᾱ, σα)
 end
