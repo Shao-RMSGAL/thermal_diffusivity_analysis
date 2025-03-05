@@ -206,7 +206,8 @@ function addfileactions(programparameters) # , config)
                         startframe=parse(Int, programparameters.startframeentry.text),
                         endframe=parse(Int, programparameters.endframeentry.text),
                         framerate=parse(Float64, programparameters.fpsentry.text),
-                        hotspottrackingenabled=!(programparameters.hotspotcheckbox.active)
+                        hotspottrackingenabled=!(programparameters.hotspotcheckbox.active),
+                        generateentirehistory=programparameters.generateentirehistorycheckbox.active
                     )
                 catch
                     @warn "One or more entries are malformed"

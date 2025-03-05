@@ -108,9 +108,24 @@ function plotdropoff_flattening(totaldata::DataFrame, data::DataFrame, options::
             size=(1920, 1080,),
             margin=0mm,
         )
+        #  surf = contour(
+        #      xgrid,
+        #      ygrid,
+        #      tempmatrixovertime[i],
+        #      xlabel="x-position (μm)",
+        #      ylabel="y-position (μm)",
+        #      xtickfontsize=8,
+        #      ytickfontsize=8,
+        #      ctickfontsize=8,
+        #      xguidefontsize=8,
+        #      yguidefontsize=8,
+        #      zguidefontsize=8,
+        #      clims=ylimitssurface,
+        #      size=(1920, 1080,),
+        #      margin=0mm,
+        #  )
         x_coord = data[!, "Centers"][i][1] / options.interpolationpoints[1] * options.scaledistance * data[!, "Frame size"][1][1]
         y_coord = data[!, "Centers"][i][2] / options.interpolationpoints[2] * options.scaledistance * data[!, "Frame size"][1][2]
-        #  @info x_coord
         plot!(
             [x_coord, x_coord], # Hack for centerpoint visualization
             [y_coord, y_coord],
@@ -120,6 +135,11 @@ function plotdropoff_flattening(totaldata::DataFrame, data::DataFrame, options::
             #  label="Central hotspot"
             legend=false
         )
+        #  scatter!(
+        #      [x_coord], # Hack for centerpoint visualization
+        #      [y_coord],
+        #      legend=false
+        #  )
         radialtempplot = plot(
             scatterplot,
             timederivplot,
