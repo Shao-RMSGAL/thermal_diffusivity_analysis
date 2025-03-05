@@ -22,6 +22,7 @@ struct Options
     laplacianthreshold::Float64 # Fluctuation threshold used to determine threshold for considering laplacian values 
     timederivativethreshold::Float64 # Fluctuation values used to determine threshold for considering time derivative values
     hotspottrackingenabled::Bool # Determine whether to enable hotspot tracking during dropoffs.
+    generateentirehistory::Bool # Determine whether to generate an animation for the entire dataset.
     @doc """
         Options(;
             writeoutput::Bool = false,
@@ -40,9 +41,7 @@ struct Options
             tempfluxthreshold::Float64 = 5.0,
             laplacianthreshold::Float64 = 1.0,
             timederivativethreshold::Float64 = 5.0,
-            hotspottracking::Bool = true,
-        )
-
+            hotspottracking::Bool = true, generateentirehistory::Bool = false,)
     Construct an Options struct.
 
     All fields have default options that can be modified using keyword arguments.
@@ -66,6 +65,7 @@ struct Options
         laplacianthreshold::Float64=5.0e-6,
         timederivativethreshold::Float64=1.0,
         hotspottrackingenabled::Bool=true,
+        generateentirehistory::Bool=true,
     ) = new(
         writeoutput,
         dographing,
@@ -85,5 +85,6 @@ struct Options
         laplacianthreshold,
         timederivativethreshold,
         hotspottrackingenabled,
+        generateentirehistory
     )
 end

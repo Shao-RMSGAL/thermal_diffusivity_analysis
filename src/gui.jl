@@ -206,7 +206,8 @@ function addfileactions(programparameters) # , config)
                         startframe=parse(Int, programparameters.startframeentry.text),
                         endframe=parse(Int, programparameters.endframeentry.text),
                         framerate=parse(Float64, programparameters.fpsentry.text),
-                        hotspottrackingenabled=!(programparameters.hotspotcheckbox.active))
+                        hotspottrackingenabled=!(programparameters.hotspotcheckbox.active)
+                    )
                 catch
                     @warn "One or more entries are malformed"
                     info_dialog(() -> nothing, "One of your entries is maformed. Correct the error and try again.", programparameters.window)
@@ -291,6 +292,7 @@ mutable struct parameters
     videooutputdropdown::GtkDropDown
     graph::GtkPicture
     hotspotcheckbox::GtkCheckButtonLeaf
+    generateentirehistorycheckbox::GtkCheckButtonLeaf
 end
 
 """
@@ -330,6 +332,7 @@ function createtooltips(labelsandentries)
     set_gtk_property!(labelsandentries[13][2], "tooltip-text", "Select the type of output for the animation. If none is selected, no video is produced. (Not producing a video can save time if it is not needed)")
     set_gtk_property!(labelsandentries[14][2], "has-tooltip", true)
     set_gtk_property!(labelsandentries[14][2], "tooltip-text", "Control whether hotspot tracking is enabled for circular ring drawing. If not, the program sets the central hotspot at the coordinate of the all-time hottest point.")
+    set_gtk_property!(labelsandentries[14][2], "tooltip-text", "Control whether to generate a separate GIF over the entire image history (Warning, may take an extension period of time).")
 end
 
 """
@@ -369,6 +372,7 @@ function main()
         (GtkLabel("Output FPS"), GtkEntry(; text=options.framerate)),
         (GtkLabel("Video output type"), GtkDropDown(["No Output", ".mp4", ".gif"]; selected=2)),
         (GtkLabel("Disable dynamic hotspot tracking"), GtkCheckButton()),
+        (GtkLabel("Generate flattening video over entire dataset"), GtkCheckButton()),
     ]
     createtooltips(labelsandentries)
 
@@ -395,6 +399,7 @@ function main()
         labelsandentries[13][2],
         graph,
         labelsandentries[14][2],
+        labelsandentries[15][2],
     )
 
     outervbox = GtkBox(:v; vexpand=true, hexpand=true)

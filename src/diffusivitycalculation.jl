@@ -74,7 +74,15 @@ function diffusivitycalculation(diffusivitydata::DataFrame, options::Options)
     slices = options.slices
     radialincrement = Float64(radiibyframe.step)
 
+
     dropoffindex, frames = locatedropoff(diffusivitydata, options)
+
+    if (options.generateentirehistory == true)
+        dropoffindex = 1
+        frames = size(diffusivitydata, 1) - 1
+        @warn "Generating data for $(frames) frames. This may take a while."
+    end
+
     @info "Zone of interest from frame $dropoffindex-$frame, total $frames frames or $(frames/framerate) s"
     @info "Calculating time derivative over radius"
     dudtbyradius = SharedArray{Float64,2}((frames, slices))

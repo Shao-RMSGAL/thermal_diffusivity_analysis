@@ -21,7 +21,7 @@ Create an animated plot of the radial temperature distribution
 alongside the surface plot.
 """
 function plotdropoff_flattening(totaldata::DataFrame, data::DataFrame, options::Options)
-    @warn data[!, "Centers"]
+    #  @warn data[!, "Centers"]
     gr()
     @info "Starting dropoff plotting"
     radii = data[!, "Radii"]
@@ -153,7 +153,7 @@ function plotdropoff_flattening(totaldata::DataFrame, data::DataFrame, options::
             radialtempplot,
             surf,
             fullrange,
-            size=(1920, 1080),
+            size=(3840, 2160),
             left_margin=[12mm 12mm],
             bottom_margin=[12mm 12mm],
             suptitle="$(splitdir(options.filename)[end])\nAnimation of temperature over time (frame $(data[i, "Frame"]))",
